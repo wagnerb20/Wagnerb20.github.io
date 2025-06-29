@@ -1,1180 +1,885 @@
 <!DOCTYPE html>
-<html lang="en">.
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technician Metrics Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .alert-bg {
-            background-color: rgba(255, 0, 0, 0.1);
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .data-table th, .data-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .data-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .data-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .data-table tr:hover {
-            background-color: #f1f1f1;
-        }
-        @media (max-width: 768px) {
-            .responsive-table {
-                display: block;
-                overflow-x: auto;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technician Metrics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        left: -100%;
+        z-index: 50;
+      }
+      .sidebar.open {
+        left: 0;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
-
-    <!-- Admin Controls -->
-    <div id="adminControls">
-        <div class="bg-blue-800 text-white p-4">
-            <div class="container mx-auto">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold">USER MODE - LIMITED ACCESS</span>
-                    <div class="flex space-x-4">
-                        <button id="adminLoginBtn" class="text-white hover:text-blue-200">
-                            <i class="fas fa-user-shield mr-1"></i>Admin Login
-                        </button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-blue-700">
-                    <div class="flex space-x-2 items-center">
-                        <span class="text-sm">Alert Thresholds:</span>
-                        <input type="number" id="minThreshold" class="w-16 border rounded px-2 py-1 text-gray-800" min="0" value="5">
-                        <span>to</span>
-                        <input type="number" id="maxThreshold" class="w-16 border rounded px-2 py-1 text-gray-800" min="0" value="100">
-                    </div>
-                    <div class="flex space-x-2 items-center">
-                        <span class="text-sm">Inventory Threshold:</span>
-                        <input type="number" id="inventoryThreshold" class="w-16 border rounded px-2 py-1 text-gray-800" min="0" value="5">
-                    </div>
-                    <div class="flex space-x-2 items-center">
-                        <span class="text-sm">Email Frequency:</span>
-                        <select id="emailFrequency" class="border rounded px-2 py-1 text-gray-800">
-                            <option>Immediate</option>
-                            <option selected>Daily</option>
-                            <option>Weekly</option>
-                        </select>
-                    </div>
-                </div>
+<body class="bg-gray-100 font-sans">
+  <!-- Login Screen -->
+  <div id="loginBox" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-blue-600 py-6 px-8 text-center">
+        <h1 class="text-3xl font-bold text-white">Technician Metrics</h1>
+        <p class="text-blue-100 mt-2">Created by Wagner Bierd</p>
+      </div>
+      <div class="p-8">
+        <div class="mb-6">
+          <label for="username" class="block text-gray-700 text-sm font-medium mb-2">Username</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-400"></i>
             </div>
+            <input type="text" id="username" placeholder="Enter your username" 
+              class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
         </div>
+        <div class="mb-6">
+          <label for="password" class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input type="password" id="password" placeholder="Enter your password" 
+              class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+        </div>
+        <button onclick="login()" 
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+          <i class="fas fa-sign-in-alt mr-2"></i> Login
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminDashboard" class="hidden min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="sidebar bg-gray-800 text-white w-64 min-h-screen p-4">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-xl font-bold">Admin Panel</h2>
+        <button id="sidebarToggle" class="md:hidden text-white">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mb-6 p-3 bg-gray-700 rounded-lg flex items-center">
+        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <div>
+          <p class="font-medium" id="adminName">Admin User</p>
+          <p class="text-xs text-gray-300">Administrator</p>
+        </div>
+      </div>
+      <nav>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 bg-gray-700">
+          <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-users mr-3"></i> Manage Users
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-boxes mr-3"></i> Inventory
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-bullseye mr-3"></i> Validator Goals
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-file-invoice-dollar mr-3"></i> P.O. Orders
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-bell mr-3"></i> Alerts
+        </a>
+        <button onclick="logout()" class="w-full flex items-center p-3 rounded-lg mt-8 hover:bg-gray-700">
+          <i class="fas fa-sign-out-alt mr-3"></i> Logout
+        </button>
+      </nav>
     </div>
 
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="bg-white shadow rounded-lg p-6 mb-8">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center mb-4 md:mb-0">
-                    <i class="fas fa-tools text-blue-500 text-3xl mr-4"></i>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-800">Technician Metrics Dashboard</h1>
-                        <p class="text-gray-600">Monitor performance and inventory in real-time</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button id="adminLoginBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-                        <i class="fas fa-user-shield mr-2"></i>Admin
-                    </button>
-                    <div class="relative">
-                        <button id="alertBtn" class="bg-red-100 text-red-700 px-4 py-2 rounded-lg flex items-center">
-                            <i class="fas fa-bell mr-2"></i>
-                            <span id="alertCount" class="font-bold">3</span> Alerts
-                        </button>
-                        <div id="alertDropdown" class="dropdown-content absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 hidden">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-gray-800">Recent Alerts</h3>
-                                <span class="text-xs text-gray-500">Just now</span>
-                            </div>
-                            <ul class="space-y-2">
-                                <li class="text-sm p-2 rounded bg-red-50 text-red-700">
-                                    <i class="fas fa-exclamation-circle mr-2"></i> Low BV count for Tech #102
-                                </li>
-                                <li class="text-sm p-2 rounded bg-red-50 text-red-700">
-                                    <i class="fas fa-exclamation-circle mr-2"></i> High error rate for Tech #105
-                                </li>
-                                <li class="text-sm p-2 rounded bg-red-50 text-red-700">
-                                    <i class="fas fa-exclamation-circle mr-2"></i> Low parts tested for Tech #108
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg flex items-center">
-                        <i class="fas fa-sync-alt mr-2"></i>
-                        <span>Last updated: <span id="lastUpdated">Just now</span></span>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+      <div class="flex justify-between items-center mb-6">
+        <button id="mobileSidebarToggle" class="md:hidden bg-gray-200 p-2 rounded-lg">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+      </div>
 
-        <!-- Tabs Navigation -->
-        <div class="bg-white shadow rounded-lg mb-6">
-            <div class="flex overflow-x-auto">
-                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500 active" data-tab="metrics">
-                    <i class="fas fa-chart-line mr-2"></i>Technician Metrics
-                </button>
-                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500" data-tab="orders">
-                    <i class="fas fa-clipboard-list mr-2"></i>Orders Input
-                </button>
-                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500" data-tab="inventory">
-                    <i class="fas fa-boxes mr-2"></i>Inventory
-                </button>
-                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500" data-tab="emails">
-                    <i class="fas fa-envelope mr-2"></i>Alert Emails
-                </button>
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Active Technicians</p>
+              <h3 class="text-3xl font-bold mt-2">24</h3>
             </div>
+            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <i class="fas fa-users-cog text-blue-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-green-500 text-sm font-medium">+2 from last week</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Pending Orders</p>
+              <h3 class="text-3xl font-bold mt-2">18</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+              <i class="fas fa-clipboard-list text-orange-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-red-500 text-sm font-medium">-5 from last week</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Low Inventory Items</p>
+              <h3 class="text-3xl font-bold mt-2">7</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-red-500 text-sm font-medium">+3 from last week</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Avg. Completion Time</p>
+              <h3 class="text-3xl font-bold mt-2">2.4h</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <i class="fas fa-stopwatch text-green-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-green-500 text-sm font-medium">-0.3h from last week</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Sections -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Recent Orders -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-800">Recent Orders</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1024</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">John Smith</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.1h</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1023</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Sarah Johnson</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1.5h</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1022</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mike Brown</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Pending</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="p-4 bg-gray-50 text-right">
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All Orders →</button>
+          </div>
         </div>
 
-        <!-- Tab Contents -->
-        <div class="bg-white shadow rounded-lg p-6 mb-8">
-            <!-- Metrics Tab -->
-            <div id="metrics" class="tab-content active">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">
-                        <i class="fas fa-chart-line mr-2 text-blue-500"></i>Technician Metrics
-                    </h2>
-                    <button id="addTechBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-                        <i class="fas fa-plus mr-2"></i>Add Technician
-                    </button>
-                </div>
-                
-                <div class="responsive-table overflow-x-auto">
-                    <table class="data-table w-full">
-                        <thead>
-                            <tr>
-                                <th>Tech ID</th>
-                                <th>Name</th>
-                                <th>Order #</th>
-                                <th>BV Count</th>
-                                <th>Errors</th>
-                                <th>Error %</th>
-                                <th>Parts Tested</th>
-                                <th>Parts Repaired</th>
-                                <th>Parts Replaced</th>
-                                <th>Time Spent (hrs)</th>
-                                <th>Notes</th>
-                                <th>Parts Available</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="alert-bg">
-                                <td>101</td>
-                                <td>John Smith</td>
-                                <td>
-                                    <select class="border rounded px-2 py-1 w-full">
-                                        <option>ORD-001</option>
-                                        <option>ORD-002</option>
-                                        <option>ORD-003</option>
-                                    </select>
-                                </td>
-                                <td>5 BV</td>
-                                <td>3</td>
-                                <td>60%</td>
-                                <td>7</td>
-                                <td>3</td>
-                                <td>2</td>
-                                <td>4.5</td>
-                                <td>Needs more training</td>
-                                <td>
-                                    <select class="border rounded px-2 py-1 w-full">
-                                        <option>Yes</option>
-                                        <option>No</option>
-                                    </select>
-                                </td>
-                                <td>2023-06-15</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>102</td>
-                                <td>Sarah Johnson</td>
-                                <td>
-                                    <select class="border rounded px-2 py-1 w-full">
-                                        <option>ORD-002</option>
-                                        <option>ORD-001</option>
-                                        <option>ORD-003</option>
-                                    </select>
-                                </td>
-                                <td>8 BV</td>
-                                <td>2</td>
-                                <td>25%</td>
-                                <td>10</td>
-                                <td>5</td>
-                                <td>3</td>
-                                <td>6.0</td>
-                                <td>Excellent performance</td>
-                                <td>
-                                    <select class="border rounded px-2 py-1 w-full">
-                                        <option>Yes</option>
-                                        <option>No</option>
-                                    </select>
-                                </td>
-                                <td>2023-06-15</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr class="alert-bg">
-                                <td>103</td>
-                                <td>Mike Brown</td>
-                                <td>
-                                    <select class="border rounded px-2 py-1 w-full">
-                                        <option>ORD-003</option>
-                                        <option>ORD-001</option>
-                                        <option>ORD-002</option>
-                                    </select>
-                                </td>
-                                <td>6 BV</td>
-                                <td>4</td>
-                                <td>66.7%</td>
-                                <td>5</td>
-                                <td>2</td>
-                                <td>1</td>
-                                <td>3.5</td>
-                                <td>Equipment issues</td>
-                                <td>
-                                    <select class="border rounded px-2 py-1 w-full">
-                                        <option>Yes</option>
-                                        <option>No</option>
-                                    </select>
-                                </td>
-                                <td>2023-06-15</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
-                        <h3 class="font-bold text-gray-700 mb-2">Total BV Count</h3>
-                        <p class="text-3xl font-bold text-blue-500">19 BV</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-                        <h3 class="font-bold text-gray-700 mb-2">Average Error Rate</h3>
-                        <p class="text-3xl font-bold text-red-500">50.6%</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-                        <h3 class="font-bold text-gray-700 mb-2">Total Parts Tested</h3>
-                        <p class="text-3xl font-bold text-green-500">22</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Orders Tab -->
-            <div id="orders" class="tab-content">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">
-                        <i class="fas fa-clipboard-list mr-2 text-blue-500"></i>Orders Input
-                    </h2>
-                    <button id="addOrderBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-                        <i class="fas fa-plus mr-2"></i>Add Order
-                    </button>
-                </div>
-                
-                <div class="responsive-table overflow-x-auto">
-                    <table class="data-table w-full">
-                        <thead>
-                            <tr>
-                                <th>Order #</th>
-                                <th>Customer</th>
-                                <th>Date Received</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>ORD-001</td>
-                                <td>Acme Corp</td>
-                                <td>2023-06-10</td>
-                                <td><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">In Progress</span></td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>ORD-002</td>
-                                <td>Globex Inc</td>
-                                <td>2023-06-12</td>
-                                <td><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>ORD-003</td>
-                                <td>Wayne Ent</td>
-                                <td>2023-06-14</td>
-                                <td><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Completed</span></td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Inventory Tab -->
-            <div id="inventory" class="tab-content">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">
-                        <i class="fas fa-boxes mr-2 text-blue-500"></i>Inventory
-                    </h2>
-                    <button id="addInventoryBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-                        <i class="fas fa-plus mr-2"></i>Add Item
-                    </button>
-                </div>
-                
-                <div class="responsive-table overflow-x-auto">
-                    <table class="data-table w-full">
-                        <thead>
-                            <tr>
-                                <th>Part #</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>P-1001</td>
-                                <td>Motherboard</td>
-                                <td>12</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>P-1002</td>
-                                <td>Power Supply</td>
-                                <td>8</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr class="alert-bg">
-                                <td>P-1003</td>
-                                <td>RAM Module</td>
-                                <td>2</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="mt-6">
-                    <h3 class="font-bold text-gray-700 mb-4">Inventory Alerts</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-500 flex items-start">
-                            <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3 mt-1"></i>
-                            <div>
-                                <h4 class="font-bold text-red-700">Low Stock Alert</h4>
-                                <p class="text-sm text-gray-700">RAM Module (P-1003) is running low (2 remaining)</p>
-                            </div>
-                        </div>
-                        <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500 flex items-start">
-                            <i class="fas fa-info-circle text-yellow-500 text-xl mr-3 mt-1"></i>
-                            <div>
-                                <h4 class="font-bold text-yellow-700">Reorder Suggestion</h4>
-                                <p class="text-sm text-gray-700">Power Supply (P-1002) has only 8 units left</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Emails Tab -->
-            <div id="emails" class="tab-content">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">
-                        <i class="fas fa-envelope mr-2 text-blue-500"></i>Alert Emails
-                    </h2>
-                    <button id="addEmailBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-                        <i class="fas fa-plus mr-2"></i>Add Email
-                    </button>
-                </div>
-                
-                <div class="responsive-table overflow-x-auto">
-                    <table class="data-table w-full">
-                        <thead>
-                            <tr>
-                                <th>Email Address</th>
-                                <th>Notification Type</th>
-                                <th>Last Sent</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>manager@company.com</td>
-                                <td>All Alerts</td>
-                                <td>2023-06-15 09:30</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>supervisor@company.com</td>
-                                <td>Critical Only</td>
-                                <td>2023-06-15 09:30</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>inventory@company.com</td>
-                                <td>Inventory Alerts</td>
-                                <td>2023-06-14 16:45</td>
-                                <td>
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="mt-6 bg-gray-50 p-6 rounded-lg">
-                    <h3 class="font-bold text-gray-700 mb-4">Email Alert Settings</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">Alert Thresholds</label>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-1">BV Count Alert</label>
-                                    <input type="number" class="w-full border rounded px-3 py-2" value="6" min="0">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-1">Error Rate Alert (%)</label>
-                                    <input type="number" class="w-full border rounded px-3 py-2" value="5" min="0" max="100">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-1">Parts Tested Alert</label>
-                                    <input type="number" class="w-full border rounded px-3 py-2" value="8" min="0">
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">Notification Frequency</label>
-                            <select class="w-full border rounded px-3 py-2">
-                                <option>Immediate</option>
-                                <option selected>Daily Summary</option>
-                                <option>Weekly Summary</option>
-                            </select>
-                            
-                            <div class="mt-6">
-                                <label class="flex items-center">
-                                    <input type="checkbox" class="form-checkbox text-blue-500" checked>
-                                    <span class="ml-2 text-gray-700">Enable email notifications</span>
-                                </label>
-                                <label class="flex items-center mt-2">
-                                    <input type="checkbox" class="form-checkbox text-blue-500" checked>
-                                    <span class="ml-2 text-gray-700">Include detailed reports</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-6">
-                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Save Settings
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <!-- Inventory Alerts -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-800">Inventory Alerts</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threshold</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RJ45 Connectors</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">50</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cat6 Cable (ft)</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">320</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">500</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Patch Panels</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="p-4 bg-gray-50 text-right">
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View Full Inventory →</button>
+          </div>
         </div>
+      </div>
+
+      <!-- Performance Chart -->
+      <div class="bg-white rounded-xl shadow p-6 mb-8">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-medium text-gray-800">Technician Performance</h3>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg">Weekly</button>
+            <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg">Monthly</button>
+            <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg">Quarterly</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="performanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technician Dashboard -->
+  <div id="technicianDashboard" class="hidden min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="sidebar bg-gray-800 text-white w-64 min-h-screen p-4">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-xl font-bold">Technician Panel</h2>
+        <button id="techSidebarToggle" class="md:hidden text-white">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mb-6 p-3 bg-gray-700 rounded-lg flex items-center">
+        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
+          <i class="fas fa-user-cog"></i>
+        </div>
+        <div>
+          <p class="font-medium" id="techName">Technician User</p>
+          <p class="text-xs text-gray-300">Level 2 Technician</p>
+        </div>
+      </div>
+      <nav>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 bg-gray-700">
+          <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-clipboard-list mr-3"></i> Available Orders
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-chart-line mr-3"></i> My Metrics
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-tools mr-3"></i> Equipment
+        </a>
+        <button onclick="logout()" class="w-full flex items-center p-3 rounded-lg mt-8 hover:bg-gray-700">
+          <i class="fas fa-sign-out-alt mr-3"></i> Logout
+        </button>
+      </nav>
     </div>
 
-    <!-- Add Technician Modal -->
-    <div id="techModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Add New Technician</h3>
-                <button id="closeTechModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <form id="techForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Technician ID</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter ID" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter name" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Initial Order</label>
-                        <select class="w-full border rounded px-3 py-2" required>
-                            <option value="">Select an order</option>
-                            <option>ORD-001</option>
-                            <option>ORD-002</option>
-                            <option>ORD-003</option>
-                        </select>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelTechBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Save Technician
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+      <div class="flex justify-between items-center mb-6">
+        <button id="mobileTechSidebarToggle" class="md:hidden bg-gray-200 p-2 rounded-lg">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-2xl font-bold text-gray-800">Technician Dashboard</h1>
+      </div>
+
+      <!-- Welcome Card -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow p-6 text-white mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold mb-2">Good Morning, <span id="techFirstName">Technician</span>!</h2>
+            <p class="opacity-90">You have <span class="font-bold">3 active tasks</span> with <span class="font-bold">2 high priority</span> items.</p>
+          </div>
+          <div class="w-16 h-16 rounded-full bg-blue-400 bg-opacity-30 flex items-center justify-center">
+            <i class="fas fa-bolt text-2xl"></i>
+          </div>
         </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Assigned Tasks</p>
+              <h3 class="text-3xl font-bold mt-2">5</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <i class="fas fa-tasks text-blue-600"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Avg. Completion</p>
+              <h3 class="text-3xl font-bold mt-2">2.2h</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <i class="fas fa-stopwatch text-green-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-green-500 text-sm font-medium">Better than 85% of team</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Quality Score</p>
+              <h3 class="text-3xl font-bold mt-2">94%</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+              <i class="fas fa-award text-purple-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-green-500 text-sm font-medium">+2% from last month</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Available Orders -->
+      <div class="bg-white rounded-xl shadow overflow-hidden mb-8">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h3 class="text-lg font-medium text-gray-800">Available Orders</h3>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Claim New Order
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1030</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Building A, Floor 3</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">High</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3h</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">Claim</button>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1029</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Building C, Floor 1</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Medium</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2h</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">Claim</button>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1028</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Building B, Floor 2</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Low</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1.5h</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">Claim</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Performance Chart -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-medium text-gray-800">Your Performance Metrics</h3>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg">Weekly</button>
+            <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg">Monthly</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="techPerformanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supervisor Dashboard -->
+  <div id="supervisorDashboard" class="hidden min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="sidebar bg-gray-800 text-white w-64 min-h-screen p-4">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-xl font-bold">Supervisor Panel</h2>
+        <button id="superSidebarToggle" class="md:hidden text-white">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mb-6 p-3 bg-gray-700 rounded-lg flex items-center">
+        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
+          <i class="fas fa-user-tie"></i>
+        </div>
+        <div>
+          <p class="font-medium" id="superName">Supervisor User</p>
+          <p class="text-xs text-gray-300">Regional Supervisor</p>
+        </div>
+      </div>
+      <nav>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 bg-gray-700">
+          <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-users mr-3"></i> Technician Metrics
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-boxes mr-3"></i> Inventory
+        </a>
+        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
+          <i class="fas fa-chart-pie mr-3"></i> Reports
+        </a>
+        <button onclick="logout()" class="w-full flex items-center p-3 rounded-lg mt-8 hover:bg-gray-700">
+          <i class="fas fa-sign-out-alt mr-3"></i> Logout
+        </button>
+      </nav>
     </div>
 
-    <!-- Add Inventory Modal -->
-    <div id="inventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Add Inventory Item</h3>
-                <button id="closeInventoryModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <form id="inventoryForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Part Number</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="e.g. P-1004" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Description</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter description" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Quantity</label>
-                        <input type="number" class="w-full border rounded px-3 py-2" placeholder="Enter quantity" min="0" required>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelInventoryBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Save Item
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+      <div class="flex justify-between items-center mb-6">
+        <button id="mobileSuperSidebarToggle" class="md:hidden bg-gray-200 p-2 rounded-lg">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-2xl font-bold text-gray-800">Supervisor Dashboard</h1>
+      </div>
 
-    <!-- Add Email Modal -->
-    <div id="emailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Add Alert Email</h3>
-                <button id="closeEmailModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
+      <!-- Team Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Active Technicians</p>
+              <h3 class="text-3xl font-bold mt-2">18</h3>
             </div>
-            <div class="p-6">
-                <form id="emailForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
-                        <input type="email" class="w-full border rounded px-3 py-2" placeholder="Enter email" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Notification Type</label>
-                        <select class="w-full border rounded px-3 py-2" required>
-                            <option value="">Select type</option>
-                            <option>All Alerts</option>
-                            <option>Critical Only</option>
-                            <option>Inventory Alerts</option>
-                        </select>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelEmailBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Save Email
-                        </button>
-                    </div>
-                </form>
+            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <i class="fas fa-users text-blue-600"></i>
             </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-green-500 text-sm font-medium">+2 from last week</span>
+          </div>
         </div>
-    </div>
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Add New Technician</h3>
-                <button id="closeTechModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Avg. Completion</p>
+              <h3 class="text-3xl font-bold mt-2">2.8h</h3>
             </div>
-            <div class="p-6">
-                <form id="techForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Technician ID</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter ID" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter name" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Initial Order</label>
-                        <select class="w-full border rounded px-3 py-2" required>
-                            <option value="">Select an order</option>
-                            <option>ORD-001</option>
-                            <option>ORD-002</option>
-                            <option>ORD-003</option>
-                        </select>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelTechBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Save Technician
-                        </button>
-                    </div>
-                </form>
+            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <i class="fas fa-stopwatch text-green-600"></i>
             </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-red-500 text-sm font-medium">+0.3h from last week</span>
+          </div>
         </div>
-    </div>
+        <div class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500">Team Quality</p>
+              <h3 class="text-3xl font-bold mt-2">89%</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+              <i class="fas fa-award text-purple-600"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-green-500 text-sm font-medium">+1% from last week</span>
+          </div>
+        </div>
+      </div>
 
-    <!-- Add Order Modal -->
-    <div id="orderModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Add New Order</h3>
-                <button id="closeOrderModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <form>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Order Number</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="e.g. ORD-004">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Customer Name</label>
-                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter customer name">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Date Received</label>
-                        <input type="date" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Status</label>
-                        <select class="w-full border rounded px-3 py-2">
-                            <option>Pending</option>
-                            <option>In Progress</option>
-                            <option>Completed</option>
-                        </select>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelOrderBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Save Order
-                        </button>
-                    </div>
-                </form>
-            </div>
+      <!-- Technician Performance -->
+      <div class="bg-white rounded-xl shadow overflow-hidden mb-8">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-800">Technician Performance</h3>
         </div>
-    </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                      </div>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">John Smith</div>
+                      <div class="text-sm text-gray-500">Level 3</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.1h</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">96%</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                      </div>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">Sarah Johnson</div>
+                      <div class="text-sm text-gray-500">Level 2</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.9h</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">88%</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Training</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                      </div>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">Mike Brown</div>
+                      <div class="text-sm text-gray-500">Level 3</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.5h</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">92%</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    <script>
-        // Tab functionality
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const tabId = button.getAttribute('data-tab');
-                
-                // Remove active class from all buttons and contents
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-                
-                // Add active class to clicked button and corresponding content
-                button.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
-            });
-        });
-        
-        // Alert dropdown functionality
-        const alertBtn = document.getElementById('alertBtn');
-        const alertDropdown = document.getElementById('alertDropdown');
-        
-        alertBtn.addEventListener('click', () => {
-            alertDropdown.classList.toggle('hidden');
-        });
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!alertBtn.contains(e.target) && !alertDropdown.contains(e.target)) {
-                alertDropdown.classList.add('hidden');
+      <!-- Inventory Status -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-medium text-gray-800">Inventory Status</h3>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Request Order
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-medium text-gray-800">RJ45 Connectors</h4>
+                <p class="text-sm text-gray-500">Networking</p>
+              </div>
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-sm mb-1">
+                <span>Current: 12</span>
+                <span>Threshold: 50</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-red-500 h-2 rounded-full" style="width: 24%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-medium text-gray-800">Cat6 Cable (ft)</h4>
+                <p class="text-sm text-gray-500">Networking</p>
+              </div>
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-sm mb-1">
+                <span>Current: 320</span>
+                <span>Threshold: 500</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-500 h-2 rounded-full" style="width: 64%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-medium text-gray-800">Patch Panels</h4>
+                <p class="text-sm text-gray-500">Networking</p>
+              </div>
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-sm mb-1">
+                <span>Current: 8</span>
+                <span>Threshold: 10</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-500 h-2 rounded-full" style="width: 80%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const users = {
+      "Wagnerb20": { 
+        password: "291179wer", 
+        role: "admin", 
+        firstLogin: true,
+        name: "Wagner Bierd"
+      },
+      "tech1": { 
+        password: "1234", 
+        role: "technician", 
+        firstLogin: true,
+        name: "John Smith",
+        firstName: "John"
+      },
+      "super1": { 
+        password: "5678", 
+        role: "supervisor", 
+        firstLogin: true,
+        name: "Sarah Johnson",
+        firstName: "Sarah"
+      }
+    };
+
+    // Sidebar toggle functionality
+    function setupSidebarToggle(buttonId, sidebarId) {
+      const button = document.getElementById(buttonId);
+      const sidebar = document.getElementById(sidebarId);
+      
+      button.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+      });
+    }
+
+    // Initialize charts
+    function initCharts() {
+      // Admin Performance Chart
+      const adminCtx = document.getElementById('performanceChart').getContext('2d');
+      new Chart(adminCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          datasets: [{
+            label: 'Completed Orders',
+            data: [12, 19, 8, 15, 12, 3],
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
             }
-        });
-        
-        // Order modal functionality
-        const addOrderBtn = document.getElementById('addOrderBtn');
-        const orderModal = document.getElementById('orderModal');
-        const closeOrderModal = document.getElementById('closeOrderModal');
-        const cancelOrderBtn = document.getElementById('cancelOrderBtn');
-        
-        addOrderBtn.addEventListener('click', () => {
-            orderModal.classList.remove('hidden');
-        });
-        
-        closeOrderModal.addEventListener('click', () => {
-            orderModal.classList.add('hidden');
-        });
-        
-        cancelOrderBtn.addEventListener('click', () => {
-            orderModal.classList.add('hidden');
-        });
-        
-        // Modal handling functions
-        function setupModal(openBtn, modal, closeBtn, cancelBtn, form) {
-            openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
-            closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-            if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-            
-            if (form) {
-                form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    modal.classList.add('hidden');
-                    form.reset();
-                    // In a real app, you would save the data here
-                    alert('Form submitted successfully!');
-                });
-            }
+          }
         }
+      });
 
-        // Setup all modals
-        setupModal(
-            document.getElementById('addTechBtn'),
-            document.getElementById('techModal'),
-            document.getElementById('closeTechModal'),
-            document.getElementById('cancelTechBtn'),
-            document.getElementById('techForm')
-        );
-
-        setupModal(
-            document.getElementById('addOrderBtn'),
-            document.getElementById('orderModal'),
-            document.getElementById('closeOrderModal'),
-            document.getElementById('cancelOrderBtn'),
-            document.querySelector('#orderModal form')
-        );
-
-        setupModal(
-            document.getElementById('addInventoryBtn'),
-            document.getElementById('inventoryModal'),
-            document.getElementById('closeInventoryModal'),
-            document.getElementById('cancelInventoryBtn'),
-            document.getElementById('inventoryForm')
-        );
-
-        setupModal(
-            document.getElementById('addEmailBtn'),
-            document.getElementById('emailModal'),
-            document.getElementById('closeEmailModal'),
-            document.getElementById('cancelEmailBtn'),
-            document.getElementById('emailForm')
-        );
-
-        // Admin button functionality
-        const adminLoginBtn = document.getElementById('adminLoginBtn');
-        const loginModal = document.getElementById('loginModal');
-        const closeLoginModal = document.getElementById('closeLoginModal');
-        const cancelLoginBtn = document.getElementById('cancelLoginBtn');
-        
-        adminLoginBtn.addEventListener('click', () => {
-            loginModal.classList.remove('hidden');
-        });
-        
-        closeLoginModal.addEventListener('click', () => {
-            loginModal.classList.add('hidden');
-        });
-        
-        cancelLoginBtn.addEventListener('click', () => {
-            loginModal.classList.add('hidden');
-        });
-
-        // Admin credentials and state
-        let adminCredentials = {
-            username: 'wagnerB20',
-            password: '291179wer'
-        };
-        
-        // Initialize in user mode
-        document.getElementById('adminControls').classList.add('hidden');
-        document.querySelectorAll('input, select, button').forEach(element => {
-            const isOrderRelated = 
-                element.closest('#orders') || // Order tab elements
-                element.closest('tr')?.querySelector('td:nth-child(5)') || // Status column
-                element.id === 'adminLoginBtn'; // Admin login button
-            
-            if (!element.closest('#adminControls') && !isOrderRelated) {
-                element.disabled = true;
-                element.classList.add('opacity-50');
-            } else {
-                element.disabled = false;
-                element.classList.remove('opacity-50');
+      // Technician Performance Chart
+      const techCtx = document.getElementById('techPerformanceChart').getContext('2d');
+      new Chart(techCtx, {
+        type: 'line',
+        data: {
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          datasets: [
+            {
+              label: 'Completion Time (h)',
+              data: [3.2, 2.8, 2.5, 2.1],
+              borderColor: 'rgba(59, 130, 246, 1)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: 'Quality Score (%)',
+              data: [85, 88, 91, 94],
+              borderColor: 'rgba(16, 185, 129, 1)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.3
             }
-        });
-
-        // Login functionality
-        const loginForm = document.getElementById('loginForm');
-        
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            if (username === adminCredentials.username && password === adminCredentials.password) {
-                loginModal.classList.add('hidden');
-                adminControls.classList.remove('hidden');
-                // Enable all form controls
-                document.querySelectorAll('input, select, button').forEach(element => {
-                    element.disabled = false;
-                    element.classList.remove('opacity-50');
-                });
-            } else {
-                alert('Invalid credentials');
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: false
             }
-        });
-
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            adminControls.classList.add('hidden');
-            // Disable all form controls except specific order-related ones
-            document.querySelectorAll('input, select, button, textarea').forEach(element => {
-                const isOrderRelated = 
-                    element.closest('#orders') || // Order tab elements
-                    element.closest('tr')?.querySelector('td:nth-child(5)') || // Status column
-                    element.id === 'adminLoginBtn'; // Admin login button
-                
-                if (!element.closest('#adminControls') && !isOrderRelated) {
-                    element.disabled = true;
-                    element.classList.add('opacity-50');
-                } else {
-                    element.disabled = false;
-                    element.classList.remove('opacity-50');
-                }
-            });
-            // Reset admin login form
-            loginForm.reset();
-            // Close any open modals
-            document.querySelectorAll('.fixed').forEach(modal => {
-                modal.classList.add('hidden');
-            });
-            // Reset any edit modes in tables
-            document.querySelectorAll('.data-table').forEach(table => {
-                table.querySelectorAll('tr').forEach(row => {
-                    Array.from(row.cells).forEach((cell, index) => {
-                        if (index !== row.cells.length - 1 && cell.querySelector('input')) {
-                            const input = cell.querySelector('input');
-                            cell.textContent = input.value;
-                        }
-                    });
-                });
-            });
-            alert('Successfully logged out of admin mode');
-        });
-
-        // Change Password functionality
-        const changePasswordModal = document.getElementById('changePasswordModal');
-        const changePasswordForm = document.getElementById('changePasswordForm');
-        
-        document.getElementById('changePasswordBtn').addEventListener('click', () => {
-            changePasswordModal.classList.remove('hidden');
-        });
-        
-        document.getElementById('closeChangePasswordModal').addEventListener('click', () => {
-            changePasswordModal.classList.add('hidden');
-        });
-        
-        document.getElementById('cancelChangePasswordBtn').addEventListener('click', () => {
-            changePasswordModal.classList.add('hidden');
-        });
-        
-        changePasswordForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-            
-            if (currentPassword !== adminCredentials.password) {
-                alert('Current password is incorrect');
-                return;
-            }
-            
-            if (newPassword !== confirmNewPassword) {
-                alert('New passwords do not match');
-                return;
-            }
-            
-            adminCredentials.password = newPassword;
-            alert('Password changed successfully');
-            changePasswordModal.classList.add('hidden');
-            changePasswordForm.reset();
-        });
-
-        // Edit/Delete button functionality
-        function setupTableActions() {
-            document.querySelectorAll('.data-table').forEach(table => {
-                table.addEventListener('click', (e) => {
-                    const btn = e.target.closest('button');
-                    if (!btn) return;
-                    
-                    const row = btn.closest('tr');
-                    
-                    if (btn.innerHTML.includes('fa-edit')) {
-                        // Edit functionality - convert cells to inputs
-                        Array.from(row.cells).forEach((cell, index) => {
-                            if (index !== row.cells.length - 1) { // Skip actions column
-                                const currentValue = cell.textContent.trim();
-                                if (cell.querySelector('select')) {
-                                    // Skip select elements
-                                    return;
-                                }
-                                cell.innerHTML = `<input type="text" class="w-full border rounded px-2 py-1" value="${currentValue}">`;
-                            }
-                        });
-                        // Change edit button to save button
-                        btn.innerHTML = '<i class="fas fa-save"></i>';
-                        btn.classList.remove('text-blue-500');
-                        btn.classList.add('text-green-500');
-                    } else if (btn.innerHTML.includes('fa-save')) {
-                        // Save functionality - convert inputs back to text
-                        Array.from(row.cells).forEach((cell, index) => {
-                            if (index !== row.cells.length - 1) { // Skip actions column
-                                const input = cell.querySelector('input');
-                                if (input) {
-                                    cell.textContent = input.value;
-                                }
-                            }
-                        });
-                        // Change save button back to edit button
-                        btn.innerHTML = '<i class="fas fa-edit"></i>';
-                        btn.classList.remove('text-green-500');
-                        btn.classList.add('text-blue-500');
-                        alert('Changes saved successfully!');
-                    } else if (btn.innerHTML.includes('fa-trash')) {
-                        // Delete functionality
-                        if (confirm('Are you sure you want to delete this item?')) {
-                            row.remove();
-                            alert('Item deleted successfully!');
-                        }
-                    }
-                });
-            });
+          }
         }
+      });
+    }
 
-        // Initialize table actions
-        setupTableActions();
-
-        // Re-setup table actions when admin logs in/out
-        document.getElementById('logoutBtn').addEventListener('click', setupTableActions);
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            if (username === adminCredentials.username && password === adminCredentials.password) {
-                loginModal.classList.add('hidden');
-                adminControls.classList.remove('hidden');
-                // Enable all form controls
-                document.querySelectorAll('input, select, button').forEach(element => {
-                    element.disabled = false;
-                    element.classList.remove('opacity-50');
-                });
-                setupTableActions(); // Re-setup table actions
-            } else {
-                alert('Invalid credentials');
-            }
-        });
-
-        // Threshold control functionality
-        const minThreshold = document.getElementById('minThreshold');
-        const maxThreshold = document.getElementById('maxThreshold');
-        
-        minThreshold.addEventListener('change', updateThresholds);
-        maxThreshold.addEventListener('change', updateThresholds);
-        
-        function updateThresholds() {
-            const min = parseInt(minThreshold.value);
-            const max = parseInt(maxThreshold.value);
-            
-            // Validate inputs
-            if (min >= max) {
-                alert('Minimum threshold must be less than maximum');
-                minThreshold.value = 5;
-                maxThreshold.value = 100;
-                return;
-            }
-            
-            // Update all error percentage cells
-            document.querySelectorAll('.data-table td:nth-child(6)').forEach(cell => {
-                const value = parseInt(cell.textContent.replace('%', ''));
-                if (value < min || value > max) {
-                    cell.closest('tr').classList.add('alert-bg');
-                } else {
-                    cell.closest('tr').classList.remove('alert-bg');
-                }
-            });
+    function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const user = users[username];
+      
+      if (user && user.password === password) {
+        if (user.firstLogin) {
+          alert("Please change your password.");
+          user.firstLogin = false;
         }
         
-        // Update last updated time
-        function updateLastUpdated() {
-            const now = new Date();
-            const options = { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                hour12: true 
-            };
-            document.getElementById('lastUpdated').textContent = now.toLocaleTimeString('en-US', options);
-        }
-        
-        setInterval(updateLastUpdated, 1000);
-        updateLastUpdated();
-        
-        // Simulate alert count changes
-        setInterval(() => {
-            const alertCount = document.getElementById('alertCount');
-            const currentCount = parseInt(alertCount.textContent);
-            const newCount = Math.max(1, Math.floor(Math.random() * 5));
-            alertCount.textContent = newCount;
-            
-            if (newCount > currentCount) {
-                // Flash the alert button
-                alertBtn.classList.add('animate-pulse');
-                setTimeout(() => {
-                    alertBtn.classList.remove('animate-pulse');
-                }, 2000);
-            }
-        }, 15000);
-    </script>
+        document.getElementById("loginBox").style.display = "none";
+        showDashboard(user.role, user);
+      } else {
+        alert("Invalid credentials.");
+      }
+    }
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Admin Login</h3>
-                <button id="closeLoginModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <form id="loginForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Username</label>
-                        <input type="text" id="username" class="w-full border rounded px-3 py-2" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
-                        <input type="password" id="password" class="w-full border rounded px-3 py-2" required>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelLoginBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Login
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    function logout() {
+      document.querySelectorAll(".dashboard").forEach(el => el.style.display = "none");
+      document.getElementById("loginBox").style.display = "flex";
+    }
 
-    <!-- Change Password Modal -->
-    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="flex justify-between items-center border-b px-6 py-4">
-                <h3 class="text-lg font-bold text-gray-800">Change Password</h3>
-                <button id="closeChangePasswordModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <form id="changePasswordForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Current Password</label>
-                        <input type="password" id="currentPassword" class="w-full border rounded px-3 py-2" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">New Password</label>
-                        <input type="password" id="newPassword" class="w-full border rounded px-3 py-2" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Confirm New Password</label>
-                        <input type="password" id="confirmNewPassword" class="w-full border rounded px-3 py-2" required>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" id="cancelChangePasswordBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            Change Password
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    function showDashboard(role, user) {
+      // Hide all dashboards first
+      document.querySelectorAll(".dashboard").forEach(el => {
+        el.style.display = "none";
+        el.classList.remove('hidden');
+      });
+      
+      // Show the appropriate dashboard
+      if (role === "admin") {
+        document.getElementById("adminDashboard").style.display = "flex";
+        document.getElementById("adminName").textContent = user.name;
+        setupSidebarToggle('mobileSidebarToggle', 'adminDashboard .sidebar');
+        setupSidebarToggle('sidebarToggle', 'adminDashboard .sidebar');
+      } else if (role === "technician") {
+        document.getElementById("technicianDashboard").style.display = "flex";
+        document.getElementById("techName").textContent = user.name;
+        document.getElementById("techFirstName").textContent = user.firstName;
+        setupSidebarToggle('mobileTechSidebarToggle', 'technicianDashboard .sidebar');
+        setupSidebarToggle('techSidebarToggle', 'technicianDashboard .sidebar');
+      } else if (role === "supervisor") {
+        document.getElementById("supervisorDashboard").style.display = "flex";
+        document.getElementById("superName").textContent = user.name;
+        setupSidebarToggle('mobileSuperSidebarToggle', 'supervisorDashboard .sidebar');
+        setupSidebarToggle('superSidebarToggle', 'supervisorDashboard .sidebar');
+      }
+      
+      // Initialize charts after dashboard is shown
+      setTimeout(initCharts, 100);
+    }
+
+    // Auto refresh every 30 seconds (simulated)
+    setInterval(() => {
+      console.log("Refreshing dashboard data...");
+      // In a real app, you would fetch new data here
+    }, 30000);
+  </script>
 </body>
-</htm
+</html>
