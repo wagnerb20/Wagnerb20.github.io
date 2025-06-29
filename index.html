@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">.
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technician Metrics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .alert-bg {
+            background-color: rgba(255, 0, 0, 0.1);
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .data-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        @media (max-width: 768px) {
+            .responsive-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Admin Controls -->
+    <div id="adminControls">
+        <div class="bg-blue-800 text-white p-4">
+            <div class="container mx-auto">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold">USER MODE - LIMITED ACCESS</span>
+                    <div class="flex space-x-4">
+                        <button id="adminLoginBtn" class="text-white hover:text-blue-200">
+                            <i class="fas fa-user-shield mr-1"></i>Admin Login
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-blue-700">
+                    <div class="flex space-x-2 items-center">
+                        <span class="text-sm">Alert Thresholds:</span>
+                        <input type="number" id="minThreshold" class="w-16 border rounded px-2 py-1 text-gray-800" min="0" value="5">
+                        <span>to</span>
+                        <input type="number" id="maxThreshold" class="w-16 border rounded px-2 py-1 text-gray-800" min="0" value="100">
+                    </div>
+                    <div class="flex space-x-2 items-center">
+                        <span class="text-sm">Inventory Threshold:</span>
+                        <input type="number" id="inventoryThreshold" class="w-16 border rounded px-2 py-1 text-gray-800" min="0" value="5">
+                    </div>
+                    <div class="flex space-x-2 items-center">
+                        <span class="text-sm">Email Frequency:</span>
+                        <select id="emailFrequency" class="border rounded px-2 py-1 text-gray-800">
+                            <option>Immediate</option>
+                            <option selected>Daily</option>
+                            <option>Weekly</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="bg-white shadow rounded-lg p-6 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <i class="fas fa-tools text-blue-500 text-3xl mr-4"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Technician Metrics Dashboard</h1>
+                        <p class="text-gray-600">Monitor performance and inventory in real-time</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="adminLoginBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
+                        <i class="fas fa-user-shield mr-2"></i>Admin
+                    </button>
+                    <div class="relative">
+                        <button id="alertBtn" class="bg-red-100 text-red-700 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-bell mr-2"></i>
+                            <span id="alertCount" class="font-bold">3</span> Alerts
+                        </button>
+                        <div id="alertDropdown" class="dropdown-content absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 hidden">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-gray-800">Recent Alerts</h3>
+                                <span class="text-xs text-gray-500">Just now</span>
+                            </div>
+                            <ul class="space-y-2">
+                                <li class="text-sm p-2 rounded bg-red-50 text-red-700">
+                                    <i class="fas fa-exclamation-circle mr-2"></i> Low BV count for Tech #102
+                                </li>
+                                <li class="text-sm p-2 rounded bg-red-50 text-red-700">
+                                    <i class="fas fa-exclamation-circle mr-2"></i> High error rate for Tech #105
+                                </li>
+                                <li class="text-sm p-2 rounded bg-red-50 text-red-700">
+                                    <i class="fas fa-exclamation-circle mr-2"></i> Low parts tested for Tech #108
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        <span>Last updated: <span id="lastUpdated">Just now</span></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="flex overflow-x-auto">
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500 active" data-tab="metrics">
+                    <i class="fas fa-chart-line mr-2"></i>Technician Metrics
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500" data-tab="orders">
+                    <i class="fas fa-clipboard-list mr-2"></i>Orders Input
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500" data-tab="inventory">
+                    <i class="fas fa-boxes mr-2"></i>Inventory
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 border-b-2 border-transparent hover:text-blue-500 hover:border-blue-500" data-tab="emails">
+                    <i class="fas fa-envelope mr-2"></i>Alert Emails
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="bg-white shadow rounded-lg p-6 mb-8">
+            <!-- Metrics Tab -->
+            <div id="metrics" class="tab-content active">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-chart-line mr-2 text-blue-500"></i>Technician Metrics
+                    </h2>
+                    <button id="addTechBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add Technician
+                    </button>
+                </div>
+                
+                <div class="responsive-table overflow-x-auto">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th>Tech ID</th>
+                                <th>Name</th>
+                                <th>Order #</th>
+                                <th>BV Count</th>
+                                <th>Errors</th>
+                                <th>Error %</th>
+                                <th>Parts Tested</th>
+                                <th>Parts Repaired</th>
+                                <th>Parts Replaced</th>
+                                <th>Time Spent (hrs)</th>
+                                <th>Notes</th>
+                                <th>Parts Available</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="alert-bg">
+                                <td>101</td>
+                                <td>John Smith</td>
+                                <td>
+                                    <select class="border rounded px-2 py-1 w-full">
+                                        <option>ORD-001</option>
+                                        <option>ORD-002</option>
+                                        <option>ORD-003</option>
+                                    </select>
+                                </td>
+                                <td>5 BV</td>
+                                <td>3</td>
+                                <td>60%</td>
+                                <td>7</td>
+                                <td>3</td>
+                                <td>2</td>
+                                <td>4.5</td>
+                                <td>Needs more training</td>
+                                <td>
+                                    <select class="border rounded px-2 py-1 w-full">
+                                        <option>Yes</option>
+                                        <option>No</option>
+                                    </select>
+                                </td>
+                                <td>2023-06-15</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>102</td>
+                                <td>Sarah Johnson</td>
+                                <td>
+                                    <select class="border rounded px-2 py-1 w-full">
+                                        <option>ORD-002</option>
+                                        <option>ORD-001</option>
+                                        <option>ORD-003</option>
+                                    </select>
+                                </td>
+                                <td>8 BV</td>
+                                <td>2</td>
+                                <td>25%</td>
+                                <td>10</td>
+                                <td>5</td>
+                                <td>3</td>
+                                <td>6.0</td>
+                                <td>Excellent performance</td>
+                                <td>
+                                    <select class="border rounded px-2 py-1 w-full">
+                                        <option>Yes</option>
+                                        <option>No</option>
+                                    </select>
+                                </td>
+                                <td>2023-06-15</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="alert-bg">
+                                <td>103</td>
+                                <td>Mike Brown</td>
+                                <td>
+                                    <select class="border rounded px-2 py-1 w-full">
+                                        <option>ORD-003</option>
+                                        <option>ORD-001</option>
+                                        <option>ORD-002</option>
+                                    </select>
+                                </td>
+                                <td>6 BV</td>
+                                <td>4</td>
+                                <td>66.7%</td>
+                                <td>5</td>
+                                <td>2</td>
+                                <td>1</td>
+                                <td>3.5</td>
+                                <td>Equipment issues</td>
+                                <td>
+                                    <select class="border rounded px-2 py-1 w-full">
+                                        <option>Yes</option>
+                                        <option>No</option>
+                                    </select>
+                                </td>
+                                <td>2023-06-15</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                        <h3 class="font-bold text-gray-700 mb-2">Total BV Count</h3>
+                        <p class="text-3xl font-bold text-blue-500">19 BV</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                        <h3 class="font-bold text-gray-700 mb-2">Average Error Rate</h3>
+                        <p class="text-3xl font-bold text-red-500">50.6%</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                        <h3 class="font-bold text-gray-700 mb-2">Total Parts Tested</h3>
+                        <p class="text-3xl font-bold text-green-500">22</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="orders" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-clipboard-list mr-2 text-blue-500"></i>Orders Input
+                    </h2>
+                    <button id="addOrderBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add Order
+                    </button>
+                </div>
+                
+                <div class="responsive-table overflow-x-auto">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Date Received</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ORD-001</td>
+                                <td>Acme Corp</td>
+                                <td>2023-06-10</td>
+                                <td><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">In Progress</span></td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ORD-002</td>
+                                <td>Globex Inc</td>
+                                <td>2023-06-12</td>
+                                <td><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ORD-003</td>
+                                <td>Wayne Ent</td>
+                                <td>2023-06-14</td>
+                                <td><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Completed</span></td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div id="inventory" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-boxes mr-2 text-blue-500"></i>Inventory
+                    </h2>
+                    <button id="addInventoryBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add Item
+                    </button>
+                </div>
+                
+                <div class="responsive-table overflow-x-auto">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th>Part #</th>
+                                <th>Description</th>
+                                <th>Quantity</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>P-1001</td>
+                                <td>Motherboard</td>
+                                <td>12</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>P-1002</td>
+                                <td>Power Supply</td>
+                                <td>8</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="alert-bg">
+                                <td>P-1003</td>
+                                <td>RAM Module</td>
+                                <td>2</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-bold text-gray-700 mb-4">Inventory Alerts</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-500 flex items-start">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-red-700">Low Stock Alert</h4>
+                                <p class="text-sm text-gray-700">RAM Module (P-1003) is running low (2 remaining)</p>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500 flex items-start">
+                            <i class="fas fa-info-circle text-yellow-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-yellow-700">Reorder Suggestion</h4>
+                                <p class="text-sm text-gray-700">Power Supply (P-1002) has only 8 units left</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emails Tab -->
+            <div id="emails" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-envelope mr-2 text-blue-500"></i>Alert Emails
+                    </h2>
+                    <button id="addEmailBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add Email
+                    </button>
+                </div>
+                
+                <div class="responsive-table overflow-x-auto">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th>Email Address</th>
+                                <th>Notification Type</th>
+                                <th>Last Sent</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>manager@company.com</td>
+                                <td>All Alerts</td>
+                                <td>2023-06-15 09:30</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>supervisor@company.com</td>
+                                <td>Critical Only</td>
+                                <td>2023-06-15 09:30</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>inventory@company.com</td>
+                                <td>Inventory Alerts</td>
+                                <td>2023-06-14 16:45</td>
+                                <td>
+                                    <button class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+                    <h3 class="font-bold text-gray-700 mb-4">Email Alert Settings</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Alert Thresholds</label>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">BV Count Alert</label>
+                                    <input type="number" class="w-full border rounded px-3 py-2" value="6" min="0">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Error Rate Alert (%)</label>
+                                    <input type="number" class="w-full border rounded px-3 py-2" value="5" min="0" max="100">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Parts Tested Alert</label>
+                                    <input type="number" class="w-full border rounded px-3 py-2" value="8" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Notification Frequency</label>
+                            <select class="w-full border rounded px-3 py-2">
+                                <option>Immediate</option>
+                                <option selected>Daily Summary</option>
+                                <option>Weekly Summary</option>
+                            </select>
+                            
+                            <div class="mt-6">
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="form-checkbox text-blue-500" checked>
+                                    <span class="ml-2 text-gray-700">Enable email notifications</span>
+                                </label>
+                                <label class="flex items-center mt-2">
+                                    <input type="checkbox" class="form-checkbox text-blue-500" checked>
+                                    <span class="ml-2 text-gray-700">Include detailed reports</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Technician Modal -->
+    <div id="techModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Add New Technician</h3>
+                <button id="closeTechModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="techForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Technician ID</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter ID" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter name" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Initial Order</label>
+                        <select class="w-full border rounded px-3 py-2" required>
+                            <option value="">Select an order</option>
+                            <option>ORD-001</option>
+                            <option>ORD-002</option>
+                            <option>ORD-003</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelTechBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Save Technician
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Inventory Modal -->
+    <div id="inventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Add Inventory Item</h3>
+                <button id="closeInventoryModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="inventoryForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Part Number</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="e.g. P-1004" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Description</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter description" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Quantity</label>
+                        <input type="number" class="w-full border rounded px-3 py-2" placeholder="Enter quantity" min="0" required>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelInventoryBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Save Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Email Modal -->
+    <div id="emailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Add Alert Email</h3>
+                <button id="closeEmailModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="emailForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
+                        <input type="email" class="w-full border rounded px-3 py-2" placeholder="Enter email" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Notification Type</label>
+                        <select class="w-full border rounded px-3 py-2" required>
+                            <option value="">Select type</option>
+                            <option>All Alerts</option>
+                            <option>Critical Only</option>
+                            <option>Inventory Alerts</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelEmailBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Save Email
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Add New Technician</h3>
+                <button id="closeTechModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="techForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Technician ID</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter ID" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter name" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Initial Order</label>
+                        <select class="w-full border rounded px-3 py-2" required>
+                            <option value="">Select an order</option>
+                            <option>ORD-001</option>
+                            <option>ORD-002</option>
+                            <option>ORD-003</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelTechBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Save Technician
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Order Modal -->
+    <div id="orderModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Add New Order</h3>
+                <button id="closeOrderModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Order Number</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="e.g. ORD-004">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Customer Name</label>
+                        <input type="text" class="w-full border rounded px-3 py-2" placeholder="Enter customer name">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Date Received</label>
+                        <input type="date" class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Status</label>
+                        <select class="w-full border rounded px-3 py-2">
+                            <option>Pending</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelOrderBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Save Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Remove active class from all buttons and contents
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding content
+                button.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Alert dropdown functionality
+        const alertBtn = document.getElementById('alertBtn');
+        const alertDropdown = document.getElementById('alertDropdown');
+        
+        alertBtn.addEventListener('click', () => {
+            alertDropdown.classList.toggle('hidden');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!alertBtn.contains(e.target) && !alertDropdown.contains(e.target)) {
+                alertDropdown.classList.add('hidden');
+            }
+        });
+        
+        // Order modal functionality
+        const addOrderBtn = document.getElementById('addOrderBtn');
+        const orderModal = document.getElementById('orderModal');
+        const closeOrderModal = document.getElementById('closeOrderModal');
+        const cancelOrderBtn = document.getElementById('cancelOrderBtn');
+        
+        addOrderBtn.addEventListener('click', () => {
+            orderModal.classList.remove('hidden');
+        });
+        
+        closeOrderModal.addEventListener('click', () => {
+            orderModal.classList.add('hidden');
+        });
+        
+        cancelOrderBtn.addEventListener('click', () => {
+            orderModal.classList.add('hidden');
+        });
+        
+        // Modal handling functions
+        function setupModal(openBtn, modal, closeBtn, cancelBtn, form) {
+            openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+            closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    modal.classList.add('hidden');
+                    form.reset();
+                    // In a real app, you would save the data here
+                    alert('Form submitted successfully!');
+                });
+            }
+        }
+
+        // Setup all modals
+        setupModal(
+            document.getElementById('addTechBtn'),
+            document.getElementById('techModal'),
+            document.getElementById('closeTechModal'),
+            document.getElementById('cancelTechBtn'),
+            document.getElementById('techForm')
+        );
+
+        setupModal(
+            document.getElementById('addOrderBtn'),
+            document.getElementById('orderModal'),
+            document.getElementById('closeOrderModal'),
+            document.getElementById('cancelOrderBtn'),
+            document.querySelector('#orderModal form')
+        );
+
+        setupModal(
+            document.getElementById('addInventoryBtn'),
+            document.getElementById('inventoryModal'),
+            document.getElementById('closeInventoryModal'),
+            document.getElementById('cancelInventoryBtn'),
+            document.getElementById('inventoryForm')
+        );
+
+        setupModal(
+            document.getElementById('addEmailBtn'),
+            document.getElementById('emailModal'),
+            document.getElementById('closeEmailModal'),
+            document.getElementById('cancelEmailBtn'),
+            document.getElementById('emailForm')
+        );
+
+        // Admin button functionality
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const loginModal = document.getElementById('loginModal');
+        const closeLoginModal = document.getElementById('closeLoginModal');
+        const cancelLoginBtn = document.getElementById('cancelLoginBtn');
+        
+        adminLoginBtn.addEventListener('click', () => {
+            loginModal.classList.remove('hidden');
+        });
+        
+        closeLoginModal.addEventListener('click', () => {
+            loginModal.classList.add('hidden');
+        });
+        
+        cancelLoginBtn.addEventListener('click', () => {
+            loginModal.classList.add('hidden');
+        });
+
+        // Admin credentials and state
+        let adminCredentials = {
+            username: 'wagnerB20',
+            password: '291179wer'
+        };
+        
+        // Initialize in user mode
+        document.getElementById('adminControls').classList.add('hidden');
+        document.querySelectorAll('input, select, button').forEach(element => {
+            const isOrderRelated = 
+                element.closest('#orders') || // Order tab elements
+                element.closest('tr')?.querySelector('td:nth-child(5)') || // Status column
+                element.id === 'adminLoginBtn'; // Admin login button
+            
+            if (!element.closest('#adminControls') && !isOrderRelated) {
+                element.disabled = true;
+                element.classList.add('opacity-50');
+            } else {
+                element.disabled = false;
+                element.classList.remove('opacity-50');
+            }
+        });
+
+        // Login functionality
+        const loginForm = document.getElementById('loginForm');
+        
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === adminCredentials.username && password === adminCredentials.password) {
+                loginModal.classList.add('hidden');
+                adminControls.classList.remove('hidden');
+                // Enable all form controls
+                document.querySelectorAll('input, select, button').forEach(element => {
+                    element.disabled = false;
+                    element.classList.remove('opacity-50');
+                });
+            } else {
+                alert('Invalid credentials');
+            }
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            adminControls.classList.add('hidden');
+            // Disable all form controls except specific order-related ones
+            document.querySelectorAll('input, select, button, textarea').forEach(element => {
+                const isOrderRelated = 
+                    element.closest('#orders') || // Order tab elements
+                    element.closest('tr')?.querySelector('td:nth-child(5)') || // Status column
+                    element.id === 'adminLoginBtn'; // Admin login button
+                
+                if (!element.closest('#adminControls') && !isOrderRelated) {
+                    element.disabled = true;
+                    element.classList.add('opacity-50');
+                } else {
+                    element.disabled = false;
+                    element.classList.remove('opacity-50');
+                }
+            });
+            // Reset admin login form
+            loginForm.reset();
+            // Close any open modals
+            document.querySelectorAll('.fixed').forEach(modal => {
+                modal.classList.add('hidden');
+            });
+            // Reset any edit modes in tables
+            document.querySelectorAll('.data-table').forEach(table => {
+                table.querySelectorAll('tr').forEach(row => {
+                    Array.from(row.cells).forEach((cell, index) => {
+                        if (index !== row.cells.length - 1 && cell.querySelector('input')) {
+                            const input = cell.querySelector('input');
+                            cell.textContent = input.value;
+                        }
+                    });
+                });
+            });
+            alert('Successfully logged out of admin mode');
+        });
+
+        // Change Password functionality
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        
+        document.getElementById('changePasswordBtn').addEventListener('click', () => {
+            changePasswordModal.classList.remove('hidden');
+        });
+        
+        document.getElementById('closeChangePasswordModal').addEventListener('click', () => {
+            changePasswordModal.classList.add('hidden');
+        });
+        
+        document.getElementById('cancelChangePasswordBtn').addEventListener('click', () => {
+            changePasswordModal.classList.add('hidden');
+        });
+        
+        changePasswordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            if (currentPassword !== adminCredentials.password) {
+                alert('Current password is incorrect');
+                return;
+            }
+            
+            if (newPassword !== confirmNewPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+            
+            adminCredentials.password = newPassword;
+            alert('Password changed successfully');
+            changePasswordModal.classList.add('hidden');
+            changePasswordForm.reset();
+        });
+
+        // Edit/Delete button functionality
+        function setupTableActions() {
+            document.querySelectorAll('.data-table').forEach(table => {
+                table.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    
+                    const row = btn.closest('tr');
+                    
+                    if (btn.innerHTML.includes('fa-edit')) {
+                        // Edit functionality - convert cells to inputs
+                        Array.from(row.cells).forEach((cell, index) => {
+                            if (index !== row.cells.length - 1) { // Skip actions column
+                                const currentValue = cell.textContent.trim();
+                                if (cell.querySelector('select')) {
+                                    // Skip select elements
+                                    return;
+                                }
+                                cell.innerHTML = `<input type="text" class="w-full border rounded px-2 py-1" value="${currentValue}">`;
+                            }
+                        });
+                        // Change edit button to save button
+                        btn.innerHTML = '<i class="fas fa-save"></i>';
+                        btn.classList.remove('text-blue-500');
+                        btn.classList.add('text-green-500');
+                    } else if (btn.innerHTML.includes('fa-save')) {
+                        // Save functionality - convert inputs back to text
+                        Array.from(row.cells).forEach((cell, index) => {
+                            if (index !== row.cells.length - 1) { // Skip actions column
+                                const input = cell.querySelector('input');
+                                if (input) {
+                                    cell.textContent = input.value;
+                                }
+                            }
+                        });
+                        // Change save button back to edit button
+                        btn.innerHTML = '<i class="fas fa-edit"></i>';
+                        btn.classList.remove('text-green-500');
+                        btn.classList.add('text-blue-500');
+                        alert('Changes saved successfully!');
+                    } else if (btn.innerHTML.includes('fa-trash')) {
+                        // Delete functionality
+                        if (confirm('Are you sure you want to delete this item?')) {
+                            row.remove();
+                            alert('Item deleted successfully!');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Initialize table actions
+        setupTableActions();
+
+        // Re-setup table actions when admin logs in/out
+        document.getElementById('logoutBtn').addEventListener('click', setupTableActions);
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === adminCredentials.username && password === adminCredentials.password) {
+                loginModal.classList.add('hidden');
+                adminControls.classList.remove('hidden');
+                // Enable all form controls
+                document.querySelectorAll('input, select, button').forEach(element => {
+                    element.disabled = false;
+                    element.classList.remove('opacity-50');
+                });
+                setupTableActions(); // Re-setup table actions
+            } else {
+                alert('Invalid credentials');
+            }
+        });
+
+        // Threshold control functionality
+        const minThreshold = document.getElementById('minThreshold');
+        const maxThreshold = document.getElementById('maxThreshold');
+        
+        minThreshold.addEventListener('change', updateThresholds);
+        maxThreshold.addEventListener('change', updateThresholds);
+        
+        function updateThresholds() {
+            const min = parseInt(minThreshold.value);
+            const max = parseInt(maxThreshold.value);
+            
+            // Validate inputs
+            if (min >= max) {
+                alert('Minimum threshold must be less than maximum');
+                minThreshold.value = 5;
+                maxThreshold.value = 100;
+                return;
+            }
+            
+            // Update all error percentage cells
+            document.querySelectorAll('.data-table td:nth-child(6)').forEach(cell => {
+                const value = parseInt(cell.textContent.replace('%', ''));
+                if (value < min || value > max) {
+                    cell.closest('tr').classList.add('alert-bg');
+                } else {
+                    cell.closest('tr').classList.remove('alert-bg');
+                }
+            });
+        }
+        
+        // Update last updated time
+        function updateLastUpdated() {
+            const now = new Date();
+            const options = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            };
+            document.getElementById('lastUpdated').textContent = now.toLocaleTimeString('en-US', options);
+        }
+        
+        setInterval(updateLastUpdated, 1000);
+        updateLastUpdated();
+        
+        // Simulate alert count changes
+        setInterval(() => {
+            const alertCount = document.getElementById('alertCount');
+            const currentCount = parseInt(alertCount.textContent);
+            const newCount = Math.max(1, Math.floor(Math.random() * 5));
+            alertCount.textContent = newCount;
+            
+            if (newCount > currentCount) {
+                // Flash the alert button
+                alertBtn.classList.add('animate-pulse');
+                setTimeout(() => {
+                    alertBtn.classList.remove('animate-pulse');
+                }, 2000);
+            }
+        }, 15000);
+    </script>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Admin Login</h3>
+                <button id="closeLoginModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="loginForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Username</label>
+                        <input type="text" id="username" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                        <input type="password" id="password" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelLoginBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-bold text-gray-800">Change Password</h3>
+                <button id="closeChangePasswordModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="changePasswordForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Current Password</label>
+                        <input type="password" id="currentPassword" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">New Password</label>
+                        <input type="password" id="newPassword" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelChangePasswordBtn" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</htm
