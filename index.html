@@ -6,6 +6,7 @@
   <title>Technician Metrics Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .animate-pulse {
       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -14,764 +15,1006 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
-    .chart-container {
-      position: relative;
-      height: 300px;
-      width: 100%;
-    }
     .sidebar {
       transition: all 0.3s ease;
     }
-    @media (max-width: 768px) {
-      .sidebar {
-        position: absolute;
-        left: -100%;
-        z-index: 50;
-      }
-      .sidebar.open {
-        left: 0;
-      }
+    .sidebar.collapsed {
+      width: 80px;
+    }
+    .sidebar.collapsed .sidebar-text {
+      display: none;
+    }
+    .sidebar.collapsed .logo-text {
+      display: none;
+    }
+    .sidebar.collapsed .menu-item {
+      justify-content: center;
+    }
+    .main-content {
+      transition: all 0.3s ease;
+    }
+    .main-content.expanded {
+      margin-left: 80px;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
     }
   </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100">
   <!-- Login Screen -->
-  <div id="loginBox" class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
-      <div class="bg-blue-600 py-6 px-8 text-center">
-        <h1 class="text-3xl font-bold text-white">Technician Metrics</h1>
-        <p class="text-blue-100 mt-2">Created by Wagner Bierd</p>
+  <div id="loginBox" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+      <div class="flex justify-center mb-6">
+        <div class="bg-blue-100 p-4 rounded-full">
+          <i class="fas fa-tools text-blue-600 text-4xl"></i>
+        </div>
       </div>
-      <div class="p-8">
-        <div class="mb-6">
-          <label for="username" class="block text-gray-700 text-sm font-medium mb-2">Username</label>
+      <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Technician Metrics</h1>
+      <p class="text-center text-gray-600 mb-8">Dashboard for COIN Validator Technicians</p>
+      
+      <div class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <i class="fas fa-user text-gray-400"></i>
             </div>
             <input type="text" id="username" placeholder="Enter your username" 
-              class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                   class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
         </div>
-        <div class="mb-6">
-          <label for="password" class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+        
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <i class="fas fa-lock text-gray-400"></i>
             </div>
             <input type="password" id="password" placeholder="Enter your password" 
-              class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                   class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
         </div>
-        <button onclick="login()" 
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+        
+        <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
           <i class="fas fa-sign-in-alt mr-2"></i> Login
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- Admin Dashboard -->
-  <div id="adminDashboard" class="hidden min-h-screen flex">
-    <!-- Sidebar -->
-    <div class="sidebar bg-gray-800 text-white w-64 min-h-screen p-4">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-xl font-bold">Admin Panel</h2>
-        <button id="sidebarToggle" class="md:hidden text-white">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="mb-6 p-3 bg-gray-700 rounded-lg flex items-center">
-        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
-          <i class="fas fa-user-shield"></i>
-        </div>
-        <div>
-          <p class="font-medium" id="adminName">Admin User</p>
-          <p class="text-xs text-gray-300">Administrator</p>
-        </div>
-      </div>
-      <nav>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 bg-gray-700">
-          <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-users mr-3"></i> Manage Users
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-boxes mr-3"></i> Inventory
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-bullseye mr-3"></i> Validator Goals
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-file-invoice-dollar mr-3"></i> P.O. Orders
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-bell mr-3"></i> Alerts
-        </a>
-        <button onclick="logout()" class="w-full flex items-center p-3 rounded-lg mt-8 hover:bg-gray-700">
-          <i class="fas fa-sign-out-alt mr-3"></i> Logout
-        </button>
-      </nav>
-    </div>
-
-    <!-- Main Content -->
-    <div class="flex-1 p-6">
-      <div class="flex justify-between items-center mb-6">
-        <button id="mobileSidebarToggle" class="md:hidden bg-gray-200 p-2 rounded-lg">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-      </div>
-
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Active Technicians</p>
-              <h3 class="text-3xl font-bold mt-2">24</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <i class="fas fa-users-cog text-blue-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-green-500 text-sm font-medium">+2 from last week</span>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Pending Orders</p>
-              <h3 class="text-3xl font-bold mt-2">18</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-              <i class="fas fa-clipboard-list text-orange-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-red-500 text-sm font-medium">-5 from last week</span>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Low Inventory Items</p>
-              <h3 class="text-3xl font-bold mt-2">7</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-              <i class="fas fa-exclamation-triangle text-red-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-red-500 text-sm font-medium">+3 from last week</span>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Avg. Completion Time</p>
-              <h3 class="text-3xl font-bold mt-2">2.4h</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <i class="fas fa-stopwatch text-green-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-green-500 text-sm font-medium">-0.3h from last week</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Content Sections -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Recent Orders -->
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-          <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-800">Recent Orders</h3>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1024</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">John Smith</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.1h</td>
-                </tr>
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1023</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Sarah Johnson</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1.5h</td>
-                </tr>
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1022</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mike Brown</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Pending</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="p-4 bg-gray-50 text-right">
-            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All Orders →</button>
-          </div>
-        </div>
-
-        <!-- Inventory Alerts -->
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-          <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-800">Inventory Alerts</h3>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threshold</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RJ45 Connectors</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">50</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cat6 Cable (ft)</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">320</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">500</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Patch Panels</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="p-4 bg-gray-50 text-right">
-            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">View Full Inventory →</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Performance Chart -->
-      <div class="bg-white rounded-xl shadow p-6 mb-8">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-lg font-medium text-gray-800">Technician Performance</h3>
-          <div class="flex space-x-2">
-            <button class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg">Weekly</button>
-            <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg">Monthly</button>
-            <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg">Quarterly</button>
-          </div>
-        </div>
-        <div class="chart-container">
-          <canvas id="performanceChart"></canvas>
-        </div>
+      
+      <div class="mt-6 text-center text-sm text-gray-500">
+        <p>Created by Wagner Bierd</p>
       </div>
     </div>
   </div>
 
-  <!-- Technician Dashboard -->
-  <div id="technicianDashboard" class="hidden min-h-screen flex">
+  <!-- Main App Layout (hidden initially) -->
+  <div id="appLayout" class="hidden">
     <!-- Sidebar -->
-    <div class="sidebar bg-gray-800 text-white w-64 min-h-screen p-4">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-xl font-bold">Technician Panel</h2>
-        <button id="techSidebarToggle" class="md:hidden text-white">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="mb-6 p-3 bg-gray-700 rounded-lg flex items-center">
-        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
-          <i class="fas fa-user-cog"></i>
+    <div id="sidebar" class="sidebar fixed top-0 left-0 h-full bg-white shadow-lg z-10 w-64">
+      <div class="p-4 flex items-center space-x-3 border-b border-gray-200">
+        <div class="bg-blue-100 p-2 rounded-lg">
+          <i class="fas fa-tools text-blue-600 text-xl"></i>
         </div>
-        <div>
-          <p class="font-medium" id="techName">Technician User</p>
-          <p class="text-xs text-gray-300">Level 2 Technician</p>
-        </div>
-      </div>
-      <nav>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 bg-gray-700">
-          <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-clipboard-list mr-3"></i> Available Orders
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-chart-line mr-3"></i> My Metrics
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-tools mr-3"></i> Equipment
-        </a>
-        <button onclick="logout()" class="w-full flex items-center p-3 rounded-lg mt-8 hover:bg-gray-700">
-          <i class="fas fa-sign-out-alt mr-3"></i> Logout
+        <span class="logo-text text-xl font-semibold text-gray-800">Validator Metrics</span>
+        <button id="toggleSidebar" class="ml-auto text-gray-500 hover:text-gray-700">
+          <i class="fas fa-chevron-left"></i>
         </button>
-      </nav>
-    </div>
-
-    <!-- Main Content -->
-    <div class="flex-1 p-6">
-      <div class="flex justify-between items-center mb-6">
-        <button id="mobileTechSidebarToggle" class="md:hidden bg-gray-200 p-2 rounded-lg">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="text-2xl font-bold text-gray-800">Technician Dashboard</h1>
       </div>
-
-      <!-- Welcome Card -->
-      <div class="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow p-6 text-white mb-8">
-        <div class="flex items-center justify-between">
+      
+      <div class="p-4">
+        <div class="flex items-center space-x-3 mb-6 p-2 bg-blue-50 rounded-lg">
+          <div class="bg-blue-100 p-2 rounded-full">
+            <i class="fas fa-user-circle text-blue-600"></i>
+          </div>
           <div>
-            <h2 class="text-2xl font-bold mb-2">Good Morning, <span id="techFirstName">Technician</span>!</h2>
-            <p class="opacity-90">You have <span class="font-bold">3 active tasks</span> with <span class="font-bold">2 high priority</span> items.</p>
-          </div>
-          <div class="w-16 h-16 rounded-full bg-blue-400 bg-opacity-30 flex items-center justify-center">
-            <i class="fas fa-bolt text-2xl"></i>
+            <p class="font-medium text-gray-800" id="currentUserName">Loading...</p>
+            <p class="text-xs text-gray-500" id="currentUserRole">Loading...</p>
           </div>
         </div>
+        
+        <nav class="space-y-1">
+          <a href="#" onclick="showDashboard('admin')" class="menu-item flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-tachometer-alt w-6 text-center"></i>
+            <span class="sidebar-text">Admin Dashboard</span>
+          </a>
+          <a href="#" onclick="showDashboard('technician')" class="menu-item flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-user-cog w-6 text-center"></i>
+            <span class="sidebar-text">Technician View</span>
+          </a>
+          <a href="#" onclick="showDashboard('supervisor')" class="menu-item flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-chart-line w-6 text-center"></i>
+            <span class="sidebar-text">Supervisor Metrics</span>
+          </a>
+          <a href="#" onclick="showSettings()" class="menu-item flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-cog w-6 text-center"></i>
+            <span class="sidebar-text">Settings</span>
+          </a>
+        </nav>
       </div>
-
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Assigned Tasks</p>
-              <h3 class="text-3xl font-bold mt-2">5</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <i class="fas fa-tasks text-blue-600"></i>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Avg. Completion</p>
-              <h3 class="text-3xl font-bold mt-2">2.2h</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <i class="fas fa-stopwatch text-green-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-green-500 text-sm font-medium">Better than 85% of team</span>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Quality Score</p>
-              <h3 class="text-3xl font-bold mt-2">94%</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-              <i class="fas fa-award text-purple-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-green-500 text-sm font-medium">+2% from last month</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Available Orders -->
-      <div class="bg-white rounded-xl shadow overflow-hidden mb-8">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-medium text-gray-800">Available Orders</h3>
-          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            <i class="fas fa-plus mr-2"></i> Claim New Order
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Time</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1030</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Building A, Floor 3</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">High</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3h</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900">Claim</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1029</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Building C, Floor 1</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Medium</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2h</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900">Claim</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-1028</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Building B, Floor 2</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Low</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1.5h</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900">Claim</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Performance Chart -->
-      <div class="bg-white rounded-xl shadow p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-lg font-medium text-gray-800">Your Performance Metrics</h3>
-          <div class="flex space-x-2">
-            <button class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg">Weekly</button>
-            <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg">Monthly</button>
-          </div>
-        </div>
-        <div class="chart-container">
-          <canvas id="techPerformanceChart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Supervisor Dashboard -->
-  <div id="supervisorDashboard" class="hidden min-h-screen flex">
-    <!-- Sidebar -->
-    <div class="sidebar bg-gray-800 text-white w-64 min-h-screen p-4">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-xl font-bold">Supervisor Panel</h2>
-        <button id="superSidebarToggle" class="md:hidden text-white">
-          <i class="fas fa-times"></i>
+      
+      <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <button onclick="logout()" class="w-full flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
+          <i class="fas fa-sign-out-alt w-6 text-center"></i>
+          <span class="sidebar-text">Logout</span>
         </button>
       </div>
-      <div class="mb-6 p-3 bg-gray-700 rounded-lg flex items-center">
-        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
-          <i class="fas fa-user-tie"></i>
-        </div>
-        <div>
-          <p class="font-medium" id="superName">Supervisor User</p>
-          <p class="text-xs text-gray-300">Regional Supervisor</p>
-        </div>
-      </div>
-      <nav>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 bg-gray-700">
-          <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-users mr-3"></i> Technician Metrics
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-boxes mr-3"></i> Inventory
-        </a>
-        <a href="#" class="flex items-center p-3 rounded-lg mb-2 hover:bg-gray-700">
-          <i class="fas fa-chart-pie mr-3"></i> Reports
-        </a>
-        <button onclick="logout()" class="w-full flex items-center p-3 rounded-lg mt-8 hover:bg-gray-700">
-          <i class="fas fa-sign-out-alt mr-3"></i> Logout
-        </button>
-      </nav>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 p-6">
-      <div class="flex justify-between items-center mb-6">
-        <button id="mobileSuperSidebarToggle" class="md:hidden bg-gray-200 p-2 rounded-lg">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="text-2xl font-bold text-gray-800">Supervisor Dashboard</h1>
-      </div>
+    <div id="mainContent" class="main-content ml-64 min-h-screen transition-all duration-300">
+      <!-- Top Navigation -->
+      <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 id="dashboardTitle" class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <button id="notificationButton" class="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-bell"></i>
+                <span id="notificationCount" class="notification-badge bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+              </button>
+              <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg overflow-hidden z-20">
+                <div class="py-1">
+                  <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-700">Notifications</p>
+                  </div>
+                  <div id="notificationList" class="max-h-60 overflow-y-auto">
+                    <!-- Notifications will be added here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="relative">
+              <button id="userMenuButton" class="flex items-center space-x-2 focus:outline-none">
+                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <i class="fas fa-user text-blue-600"></i>
+                </div>
+                <span class="hidden md:inline-block font-medium text-gray-700" id="currentUserNameShort">User</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <!-- Team Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Active Technicians</p>
-              <h3 class="text-3xl font-bold mt-2">18</h3>
+      <!-- Dashboard Content -->
+      <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <!-- Admin Panel -->
+        <div id="adminPanel" class="hidden">
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Admin Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-500">Total Technicians</p>
+                    <p id="totalTechnicians" class="text-2xl font-semibold text-gray-800">0</p>
+                  </div>
+                  <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-users text-blue-600"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-500">Completed Orders</p>
+                    <p id="completedOrders" class="text-2xl font-semibold text-gray-800">0</p>
+                  </div>
+                  <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-check-circle text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-500">Pending Orders</p>
+                    <p id="pendingOrders" class="text-2xl font-semibold text-gray-800">0</p>
+                  </div>
+                  <div class="bg-yellow-100 p-3 rounded-full">
+                    <i class="fas fa-clock text-yellow-600"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-500">Low Inventory</p>
+                    <p id="lowInventoryItems" class="text-2xl font-semibold text-gray-800">0</p>
+                  </div>
+                  <div class="bg-red-100 p-3 rounded-full">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <i class="fas fa-users text-blue-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-green-500 text-sm font-medium">+2 from last week</span>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Avg. Completion</p>
-              <h3 class="text-3xl font-bold mt-2">2.8h</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <i class="fas fa-stopwatch text-green-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-red-500 text-sm font-medium">+0.3h from last week</span>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-500">Team Quality</p>
-              <h3 class="text-3xl font-bold mt-2">89%</h3>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-              <i class="fas fa-award text-purple-600"></i>
-            </div>
-          </div>
-          <div class="mt-4">
-            <span class="text-green-500 text-sm font-medium">+1% from last week</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Technician Performance -->
-      <div class="bg-white rounded-xl shadow overflow-hidden mb-8">
-        <div class="p-6 border-b border-gray-200">
-          <h3 class="text-lg font-medium text-gray-800">Technician Performance</h3>
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-800">Quick Actions</h3>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="showUserForm()" class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
+                  <div class="bg-blue-100 p-3 rounded-full mb-2">
+                    <i class="fas fa-user-plus text-blue-600"></i>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700">Add User</span>
+                </button>
+                <button onclick="showInventoryForm()" class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
+                  <div class="bg-blue-100 p-3 rounded-full mb-2">
+                    <i class="fas fa-boxes text-blue-600"></i>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700">Add Inventory</span>
+                </button>
+                <button onclick="showGoalForm()" class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
+                  <div class="bg-blue-100 p-3 rounded-full mb-2">
+                    <i class="fas fa-bullseye text-blue-600"></i>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700">Set Goals</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="adminForms" class="bg-white rounded-lg shadow p-6">
+              <!-- Admin forms will be loaded here -->
+            </div>
+          </div>
         </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Time</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
-                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <i class="fas fa-user text-blue-600"></i>
-                      </div>
+
+        <!-- Technician Panel -->
+        <div id="techPanel" class="hidden">
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Technician Dashboard</h2>
+            
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-800">Your Orders</h3>
+                <div class="flex space-x-2">
+                  <button onclick="claimOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Claim Order
+                  </button>
+                  <button onclick="updateOrderStatus()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                    <i class="fas fa-sync-alt mr-2"></i> Update Order
+                  </button>
+                </div>
+              </div>
+              
+              <div id="techOrders" class="space-y-4">
+                <!-- Orders will be loaded here -->
+                <div class="text-center py-8">
+                  <i class="fas fa-tasks text-gray-300 text-4xl mb-2"></i>
+                  <p class="text-gray-500">No orders assigned yet</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Upload Evidence</h3>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <i class="fas fa-cloud-upload-alt text-gray-400 text-4xl mb-3"></i>
+                  <p class="text-gray-500 mb-3">Drag & drop files here or</p>
+                  <button onclick="uploadEvidence()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    Select Files
+                  </button>
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Your Stats</h3>
+                <div class="space-y-4">
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-sm font-medium text-gray-700">Completion Rate</span>
+                      <span id="completionRate" class="text-sm font-medium text-gray-700">0%</span>
                     </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">John Smith</div>
-                      <div class="text-sm text-gray-500">Level 3</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                      <div id="completionBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                   </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.1h</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">96%</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
-                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <i class="fas fa-user text-blue-600"></i>
-                      </div>
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-sm font-medium text-gray-700">Avg. Completion Time</span>
+                      <span id="avgCompletionTime" class="text-sm font-medium text-gray-700">0h 0m</span>
                     </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">Sarah Johnson</div>
-                      <div class="text-sm text-gray-500">Level 2</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                      <div id="timeBar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                   </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.9h</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">88%</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Training</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
-                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <i class="fas fa-user text-blue-600"></i>
-                      </div>
-                    </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">Mike Brown</div>
-                      <div class="text-sm text-gray-500">Level 3</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.5h</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">92%</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Inventory Status -->
-      <div class="bg-white rounded-xl shadow p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-lg font-medium text-gray-800">Inventory Status</h3>
-          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            <i class="fas fa-plus mr-2"></i> Request Order
-          </button>
+        <!-- Supervisor Panel -->
+        <div id="superPanel" class="hidden">
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Supervisor Metrics</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow p-6 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-medium text-gray-800">Validator Build Progress</h3>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500">Goal: <span id="validatorGoal">2000</span></span>
+                    <span class="text-sm font-medium text-blue-600" id="goalProgress">0%</span>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <canvas id="goalChart"></canvas>
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Team Performance</h3>
+                <div class="space-y-4">
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-sm font-medium text-gray-700">Team Completion</span>
+                      <span id="teamCompletion" class="text-sm font-medium text-gray-700">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                      <div id="teamCompletionBar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-sm font-medium text-gray-700">On-Time Rate</span>
+                      <span id="onTimeRate" class="text-sm font-medium text-gray-700">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                      <div id="onTimeBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mt-6">
+                  <h4 class="text-sm font-medium text-gray-700 mb-2">Top Performers</h4>
+                  <div id="topPerformers" class="space-y-2">
+                    <!-- Top performers will be added here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-medium text-gray-800">Technician Overview</h3>
+                  <button onclick="exportToExcel()" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                    <i class="fas fa-file-excel mr-1"></i> Export
+                  </button>
+                </div>
+                <div id="superData" class="space-y-4">
+                  <!-- Technician data will be added here -->
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-medium text-gray-800">Inventory Status</h3>
+                  <button onclick="exportToPDF()" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                    <i class="fas fa-file-pdf mr-1"></i> Export
+                  </button>
+                </div>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-700">Category</span>
+                    <span class="text-sm font-medium text-gray-700">Items</span>
+                  </div>
+                  <div id="inventoryStatus" class="space-y-2">
+                    <!-- Inventory status will be added here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex justify-between items-start">
-              <div>
-                <h4 class="font-medium text-gray-800">RJ45 Connectors</h4>
-                <p class="text-sm text-gray-500">Networking</p>
-              </div>
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
-            </div>
-            <div class="mt-4">
-              <div class="flex justify-between text-sm mb-1">
-                <span>Current: 12</span>
-                <span>Threshold: 50</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-red-500 h-2 rounded-full" style="width: 24%"></div>
-              </div>
-            </div>
-          </div>
-          <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex justify-between items-start">
-              <div>
-                <h4 class="font-medium text-gray-800">Cat6 Cable (ft)</h4>
-                <p class="text-sm text-gray-500">Networking</p>
-              </div>
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
-            </div>
-            <div class="mt-4">
-              <div class="flex justify-between text-sm mb-1">
-                <span>Current: 320</span>
-                <span>Threshold: 500</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-yellow-500 h-2 rounded-full" style="width: 64%"></div>
-              </div>
-            </div>
-          </div>
-          <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex justify-between items-start">
-              <div>
-                <h4 class="font-medium text-gray-800">Patch Panels</h4>
-                <p class="text-sm text-gray-500">Networking</p>
-              </div>
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Warning</span>
-            </div>
-            <div class="mt-4">
-              <div class="flex justify-between text-sm mb-1">
-                <span>Current: 8</span>
-                <span>Threshold: 10</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-yellow-500 h-2 rounded-full" style="width: 80%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // Initialize data
     const users = {
-      "Wagnerb20": { 
-        password: "291179wer", 
-        role: "admin", 
-        firstLogin: true,
-        name: "Wagner Bierd"
-      },
-      "tech1": { 
-        password: "1234", 
-        role: "technician", 
-        firstLogin: true,
-        name: "John Smith",
-        firstName: "John"
-      },
-      "super1": { 
-        password: "5678", 
-        role: "supervisor", 
-        firstLogin: true,
-        name: "Sarah Johnson",
-        firstName: "Sarah"
-      }
+      "Wagnerb20": { password: "291179wer", role: "admin", name: "Wagner Bierd", firstLogin: true },
+      "tech1": { password: "1234", role: "technician", name: "John Smith", firstLogin: true },
+      "tech2": { password: "1234", role: "technician", name: "Sarah Johnson", firstLogin: true },
+      "super1": { password: "5678", role: "supervisor", name: "Michael Brown", firstLogin: true }
     };
 
-    // Sidebar toggle functionality
-    function setupSidebarToggle(buttonId, sidebarId) {
-      const button = document.getElementById(buttonId);
-      const sidebar = document.getElementById(sidebarId);
+    let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
+    let validatorGoals = JSON.parse(localStorage.getItem("validatorGoals") || "[]");
+    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+    let notifications = JSON.parse(localStorage.getItem("notifications") || "[]");
+
+    // Initialize with sample data if empty
+    if (inventory.length === 0) {
+      inventory = [
+        { name: "MEI Bill Validator", qty: 15, cat: "validator" },
+        { name: "UBA Bill Acceptor", qty: 8, cat: "validator" },
+        { name: "Power Cable", qty: 25, cat: "cable" },
+        { name: "Communication Cable", qty: 3, cat: "cable" },
+        { name: "Touch Screen", qty: 7, cat: "screen" }
+      ];
+      localStorage.setItem("inventory", JSON.stringify(inventory));
+    }
+
+    if (validatorGoals.length === 0) {
+      validatorGoals = [
+        { brand: "MEI", model: "NV10", qty: 10 },
+        { brand: "UBA", model: "BV100", qty: 8 },
+        { brand: "JCM", model: "WBA", qty: 12 }
+      ];
+      localStorage.setItem("validatorGoals", JSON.stringify(validatorGoals));
+    }
+
+    if (orders.length === 0) {
+      orders = [
+        { id: "ORD1", technician: "tech1", status: "completed", created: "2023-06-01 09:00", updated: "2023-06-01 11:30", notes: "Completed without issues", evidence: "photo1.jpg" },
+        { id: "ORD2", technician: "tech1", status: "in progress", created: "2023-06-02 10:15", updated: "2023-06-02 15:45", notes: "Waiting for parts", evidence: "" },
+        { id: "ORD3", technician: "tech2", status: "completed", created: "2023-06-01 08:30", updated: "2023-06-01 10:15", notes: "Quick service", evidence: "photo2.jpg" },
+        { id: "ORD4", technician: "tech2", status: "not completed", created: "2023-06-03 13:00", updated: "2023-06-03 17:00", notes: "Needs replacement", evidence: "photo3.jpg" }
+      ];
+      localStorage.setItem("orders", JSON.stringify(orders));
+    }
+
+    // Login function
+    function login() {
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
       
-      button.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
+      if (users[u] && users[u].password === p) {
+        localStorage.setItem("currentUser", u);
+        
+        // Update first login status
+        if (users[u].firstLogin) {
+          users[u].firstLogin = false;
+          localStorage.setItem("users", JSON.stringify(users));
+          notifications.push({
+            id: Date.now(),
+            type: "info",
+            message: "Welcome to your first login! Please update your profile.",
+            timestamp: new Date().toISOString(),
+            read: false
+          });
+          localStorage.setItem("notifications", JSON.stringify(notifications));
+        }
+        
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("appLayout").classList.remove("hidden");
+        showDashboard(users[u].role);
+        updateUserInfo();
+        updateNotifications();
+        
+        // Start periodic updates
+        startPeriodicUpdates();
+      } else {
+        alert("Invalid credentials");
+      }
+    }
+
+    // Show appropriate dashboard based on role
+    function showDashboard(role) {
+      document.getElementById("adminPanel").classList.add("hidden");
+      document.getElementById("techPanel").classList.add("hidden");
+      document.getElementById("superPanel").classList.add("hidden");
+      
+      if (role === "admin") {
+        document.getElementById("adminPanel").classList.remove("hidden");
+        document.getElementById("dashboardTitle").textContent = "Admin Dashboard";
+        updateAdminMetrics();
+      } else if (role === "technician") {
+        document.getElementById("techPanel").classList.remove("hidden");
+        document.getElementById("dashboardTitle").textContent = "Technician Dashboard";
+        displayTechOrders();
+        updateTechStats();
+      } else if (role === "supervisor") {
+        document.getElementById("superPanel").classList.remove("hidden");
+        document.getElementById("dashboardTitle").textContent = "Supervisor Dashboard";
+        renderSupervisorPanel();
+      }
+    }
+
+    // Update user info in sidebar and header
+    function updateUserInfo() {
+      const currentUser = localStorage.getItem("currentUser");
+      if (currentUser && users[currentUser]) {
+        document.getElementById("currentUserName").textContent = users[currentUser].name;
+        document.getElementById("currentUserRole").textContent = users[currentUser].role.charAt(0).toUpperCase() + users[currentUser].role.slice(1);
+        document.getElementById("currentUserNameShort").textContent = users[currentUser].name.split(" ")[0];
+      }
+    }
+
+    // Admin functions
+    function showUserForm() {
+      document.getElementById("adminForms").innerHTML = `
+        <div class="mb-6">
+          <h3 class="text-lg font-medium text-gray-800 mb-4">Add New User</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="newUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input id="newUsername" placeholder="Enter username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input id="newPassword" type="password" placeholder="Enter password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="newName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input id="newName" placeholder="Enter full name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label for="newRole" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <select id="newRole" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="technician">Technician</option>
+                <option value="supervisor">Supervisor</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button onclick="document.getElementById('adminForms').innerHTML = ''" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button onclick="addUser()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create User</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function addUser() {
+      const user = document.getElementById("newUsername").value;
+      const pass = document.getElementById("newPassword").value;
+      const name = document.getElementById("newName").value;
+      const role = document.getElementById("newRole").value;
+      
+      if (!user || !pass || !name) {
+        alert("Please enter all user fields.");
+        return;
+      }
+      
+      if (users[user]) {
+        alert("User already exists.");
+        return;
+      }
+      
+      users[user] = { password: pass, role: role, name: name, firstLogin: true };
+      localStorage.setItem("users", JSON.stringify(users));
+      
+      // Add notification
+      notifications.push({
+        id: Date.now(),
+        type: "success",
+        message: `New ${role} account created: ${name}`,
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
+      updateNotifications();
+      
+      alert("User created successfully.");
+      document.getElementById("adminForms").innerHTML = "";
+      updateAdminMetrics();
+    }
+
+    function showInventoryForm() {
+      document.getElementById("adminForms").innerHTML = `
+        <div class="mb-6">
+          <h3 class="text-lg font-medium text-gray-800 mb-4">Add Inventory Item</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="invName" class="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+              <input id="invName" placeholder="Enter item name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label for="invQty" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+              <input id="invQty" type="number" placeholder="Enter quantity" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="invCat" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select id="invCat" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="validator">Validator Parts</option>
+              <option value="cable">Cables</option>
+              <option value="screen">Screens</option>
+              <option value="other">Other Components</option>
+            </select>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button onclick="document.getElementById('adminForms').innerHTML = ''" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button onclick="addInventory()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add Item</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function addInventory() {
+      const name = document.getElementById("invName").value;
+      const qty = parseInt(document.getElementById("invQty").value);
+      const cat = document.getElementById("invCat").value;
+      
+      if (!name || isNaN(qty)) {
+        alert("Invalid inventory data.");
+        return;
+      }
+      
+      inventory.push({ name, qty, cat });
+      localStorage.setItem("inventory", JSON.stringify(inventory));
+      
+      // Check if low inventory and add notification
+      if (qty < 5) {
+        notifications.push({
+          id: Date.now(),
+          type: "warning",
+          message: `Low inventory: ${name} (${qty} remaining)`,
+          timestamp: new Date().toISOString(),
+          read: false
+        });
+        localStorage.setItem("notifications", JSON.stringify(notifications));
+        updateNotifications();
+      }
+      
+      alert("Inventory item added successfully.");
+      document.getElementById("adminForms").innerHTML = "";
+      updateAdminMetrics();
+    }
+
+    function showGoalForm() {
+      document.getElementById("adminForms").innerHTML = `
+        <div class="mb-6">
+          <h3 class="text-lg font-medium text-gray-800 mb-4">Set Validator Goal</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="goalBrand" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+              <select id="goalBrand" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="MEI">MEI</option>
+                <option value="UBA">UBA</option>
+                <option value="JCM">JCM</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="goalModel" class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+              <input id="goalModel" placeholder="Enter model" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="goalQty" class="block text-sm font-medium text-gray-700 mb-1">Daily Minimum</label>
+            <input id="goalQty" type="number" placeholder="Enter daily minimum" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button onclick="document.getElementById('adminForms').innerHTML = ''" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button onclick="addGoal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Set Goal</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function addGoal() {
+      const brand = document.getElementById("goalBrand").value;
+      const model = document.getElementById("goalModel").value;
+      const qty = parseInt(document.getElementById("goalQty").value);
+      
+      if (!brand || !model || isNaN(qty)) {
+        alert("Invalid goal data.");
+        return;
+      }
+      
+      validatorGoals.push({ brand, model, qty });
+      localStorage.setItem("validatorGoals", JSON.stringify(validatorGoals));
+      
+      // Add notification
+      notifications.push({
+        id: Date.now(),
+        type: "info",
+        message: `New goal set: ${brand} ${model} (${qty}/day)`,
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
+      updateNotifications();
+      
+      alert("Goal set successfully.");
+      document.getElementById("adminForms").innerHTML = "";
+    }
+
+    function updateAdminMetrics() {
+      // Count technicians
+      const techCount = Object.values(users).filter(u => u.role === "technician").length;
+      document.getElementById("totalTechnicians").textContent = techCount;
+      
+      // Count orders
+      const completed = orders.filter(o => o.status === "completed").length;
+      const pending = orders.filter(o => o.status !== "completed").length;
+      document.getElementById("completedOrders").textContent = completed;
+      document.getElementById("pendingOrders").textContent = pending;
+      
+      // Count low inventory items
+      const lowInventory = inventory.filter(i => i.qty < 5).length;
+      document.getElementById("lowInventoryItems").textContent = lowInventory;
+    }
+
+    // Technician functions
+    function claimOrder() {
+      const currentUser = localStorage.getItem("currentUser");
+      const newOrder = {
+        id: "ORD" + (orders.length + 1),
+        technician: currentUser,
+        status: "in progress",
+        created: new Date().toLocaleString(),
+        updated: new Date().toLocaleString(),
+        notes: "",
+        evidence: ""
+      };
+      
+      orders.push(newOrder);
+      localStorage.setItem("orders", JSON.stringify(orders));
+      
+      // Add notification
+      notifications.push({
+        id: Date.now(),
+        type: "info",
+        message: `New order claimed: ${newOrder.id}`,
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
+      updateNotifications();
+      
+      // Show success message with animation
+      const btn = document.createElement("div");
+      btn.className = "fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse";
+      btn.textContent = `Order ${newOrder.id} claimed!`;
+      document.body.appendChild(btn);
+      
+      setTimeout(() => {
+        btn.classList.remove("animate-pulse");
+        btn.classList.add("opacity-0", "transition-opacity", "duration-500");
+        setTimeout(() => btn.remove(), 500);
+      }, 2000);
+      
+      displayTechOrders();
+      updateTechStats();
+    }
+
+    function updateOrderStatus() {
+      const id = prompt("Enter Order ID to update:");
+      if (!id) return;
+      
+      const order = orders.find(o => o.id === id);
+      if (!order) {
+        alert("Order not found.");
+        return;
+      }
+      
+      const statusOptions = ["completed", "in progress", "not completed", "needs parts"];
+      const status = prompt(`Set status (${statusOptions.join(", ")}):`);
+      if (!statusOptions.includes(status)) {
+        alert("Invalid status.");
+        return;
+      }
+      
+      order.status = status;
+      order.updated = new Date().toLocaleString();
+      order.notes = prompt("Enter any notes:") || order.notes;
+      
+      localStorage.setItem("orders", JSON.stringify(orders));
+      
+      // Add notification
+      notifications.push({
+        id: Date.now(),
+        type: status === "completed" ? "success" : "info",
+        message: `Order ${id} updated to ${status}`,
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
+      updateNotifications();
+      
+      alert("Order updated successfully.");
+      displayTechOrders();
+      updateTechStats();
+    }
+
+    function uploadEvidence() {
+      const id = prompt("Enter Order ID to upload evidence:");
+      if (!id) return;
+      
+      const order = orders.find(o => o.id === id);
+      if (!order) {
+        alert("Order not found.");
+        return;
+      }
+      
+      // Simulate file upload
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*";
+      fileInput.onchange = e => {
+        const file = e.target.files[0];
+        if (file) {
+          // In a real app, you would upload the file to a server
+          // Here we'll just simulate it with a fake URL
+          order.evidence = `evidence_${id}_${Date.now()}.jpg`;
+          order.updated = new Date().toLocaleString();
+          localStorage.setItem("orders", JSON.stringify(orders));
+          
+          // Add notification
+          notifications.push({
+            id: Date.now(),
+            type: "info",
+            message: `Evidence uploaded for order ${id}`,
+            timestamp: new Date().toISOString(),
+            read: false
+          });
+          localStorage.setItem("notifications", JSON.stringify(notifications));
+          updateNotifications();
+          
+          alert("Evidence uploaded successfully.");
+          displayTechOrders();
+        }
+      };
+      fileInput.click();
+    }
+
+    function displayTechOrders() {
+      const currentUser = localStorage.getItem("currentUser");
+      const techOrders = orders.filter(o => o.technician === currentUser);
+      const container = document.getElementById("techOrders");
+      
+      if (techOrders.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-tasks text-gray-300 text-4xl mb-2"></i>
+            <p class="text-gray-500">No orders assigned yet</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = "";
+      techOrders.forEach(order => {
+        let statusColor = "bg-gray-200";
+        let statusIcon = "fa-clock";
+        
+        if (order.status === "completed") {
+          statusColor = "bg-green-100 text-green-800";
+          statusIcon = "fa-check-circle";
+        } else if (order.status === "not completed") {
+          statusColor = "bg-red-100 text-red-800";
+          statusIcon = "fa-times-circle";
+        } else if (order.status === "needs parts") {
+          statusColor = "bg-yellow-100 text-yellow-800";
+          statusIcon = "fa-exclamation-circle";
+        }
+        
+        container.innerHTML += `
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <span class="text-sm font-medium text-gray-500">Order ID</span>
+                <p class="font-semibold">${order.id}</p>
+              </div>
+              <div>
+                <span class="text-sm font-medium text-gray-500">Status</span>
+                <span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
+                  <i class="fas ${statusIcon} mr-1"></i> ${order.status}
+                </span>
+              </div>
+            </div>
+            <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span class="text-sm font-medium text-gray-500">Created</span>
+                <p>${order.created}</p>
+              </div>
+              <div>
+                <span class="text-sm font-medium text-gray-500">Last Updated</span>
+                <p>${order.updated}</p>
+              </div>
+              <div class="md:col-span-2">
+                <span class="text-sm font-medium text-gray-500">Notes</span>
+                <p class="text-gray-800">${order.notes || "No notes"}</p>
+              </div>
+              ${order.evidence ? `
+                <div class="md:col-span-2">
+                  <span class="text-sm font-medium text-gray-500">Evidence</span>
+                  <div class="mt-1 flex items-center">
+                    <i class="fas fa-image text-gray-400 mr-2"></i>
+                    <span class="text-blue-600 hover:underline cursor-pointer">${order.evidence}</span>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
       });
     }
 
-    // Initialize charts
-    function initCharts() {
-      // Admin Performance Chart
-      const adminCtx = document.getElementById('performanceChart').getContext('2d');
-      new Chart(adminCtx, {
+    function updateTechStats() {
+      const currentUser = localStorage.getItem("currentUser");
+      const techOrders = orders.filter(o => o.technician === currentUser);
+      
+      if (techOrders.length === 0) {
+        document.getElementById("completionRate").textContent = "0%";
+        document.getElementById("completionBar").style.width = "0%";
+        document.getElementById("avgCompletionTime").textContent = "0h 0m";
+        document.getElementById("timeBar").style.width = "0%";
+        return;
+      }
+      
+      // Calculate completion rate
+      const completed = techOrders.filter(o => o.status === "completed").length;
+      const completionRate = Math.round((completed / techOrders.length) * 100);
+      document.getElementById("completionRate").textContent = `${completionRate}%`;
+      document.getElementById("completionBar").style.width = `${completionRate}%`;
+      
+      // Calculate average completion time (simplified)
+      const completedOrders = techOrders.filter(o => o.status === "completed");
+      let totalHours = 0;
+      
+      completedOrders.forEach(order => {
+        // Simplified calculation - in a real app you'd parse the dates properly
+        const created = new Date(order.created);
+        const updated = new Date(order.updated);
+        const hours = (updated - created) / (1000 * 60 * 60);
+        totalHours += hours;
+      });
+      
+      const avgHours = completedOrders.length > 0 ? totalHours / completedOrders.length : 0;
+      const hours = Math.floor(avgHours);
+      const minutes = Math.round((avgHours - hours) * 60);
+      
+      document.getElementById("avgCompletionTime").textContent = `${hours}h ${minutes}m`;
+      
+      // Scale the time bar (0-8 hours)
+      const timePercentage = Math.min(avgHours / 8 * 100, 100);
+      document.getElementById("timeBar").style.width = `${timePercentage}%`;
+    }
+
+    // Supervisor functions
+    function renderSupervisorPanel() {
+      // Update goal progress
+      const goal = 2000;
+      const totalCompleted = orders.filter(o => o.status === "completed").length;
+      const progressPercentage = Math.round((totalCompleted / goal) * 100);
+      
+      document.getElementById("validatorGoal").textContent = goal;
+      document.getElementById("goalProgress").textContent = `${progressPercentage}%`;
+      
+      // Render chart
+      const ctx = document.getElementById('goalChart').getContext('2d');
+      
+      // Destroy previous chart if it exists
+      if (window.goalChart) {
+        window.goalChart.destroy();
+      }
+      
+      window.goalChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
           datasets: [{
-            label: 'Completed Orders',
-            data: [12, 19, 8, 15, 12, 3],
-            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-            borderColor: 'rgba(59, 130, 246, 1)',
+            label: 'Completed Validators',
+            data: [120, 190, 170, 210, 180, 220, 240, 210, 190, 230, 250, 280],
+            backgroundColor: 'rgba(0, 118, 255, 0.7)',
+            borderColor: 'rgba(0, 118, 255, 1)',
             borderWidth: 1
+          }, {
+            label: 'Monthly Goal',
+            data: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200],
+            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+            borderColor: 'rgba(255, 159, 64, 1)',
+            borderWidth: 1,
+            type: 'line',
+            fill: false
           }]
         },
         options: {
@@ -779,107 +1022,332 @@
           maintainAspectRatio: false,
           scales: {
             y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      // Technician Performance Chart
-      const techCtx = document.getElementById('techPerformanceChart').getContext('2d');
-      new Chart(techCtx, {
-        type: 'line',
-        data: {
-          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-          datasets: [
-            {
-              label: 'Completion Time (h)',
-              data: [3.2, 2.8, 2.5, 2.1],
-              borderColor: 'rgba(59, 130, 246, 1)',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              fill: true,
-              tension: 0.3
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Validators'
+              }
             },
-            {
-              label: 'Quality Score (%)',
-              data: [85, 88, 91, 94],
-              borderColor: 'rgba(16, 185, 129, 1)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              fill: true,
-              tension: 0.3
+            x: {
+              title: {
+                display: true,
+                text: 'Month'
+              }
             }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: false
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
             }
           }
         }
       });
-    }
-
-    function login() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const user = users[username];
       
-      if (user && user.password === password) {
-        if (user.firstLogin) {
-          alert("Please change your password.");
-          user.firstLogin = false;
+      // Update team stats
+      const allTechOrders = orders.filter(o => Object.values(users).some(u => u.role === "technician" && u.name === o.technician));
+      const teamCompleted = allTechOrders.filter(o => o.status === "completed").length;
+      const teamCompletionRate = allTechOrders.length > 0 ? Math.round((teamCompleted / allTechOrders.length) * 100) : 0;
+      
+      document.getElementById("teamCompletion").textContent = `${teamCompletionRate}%`;
+      document.getElementById("teamCompletionBar").style.width = `${teamCompletionRate}%`;
+      
+      // Simplified on-time rate (random for demo)
+      const onTimeRate = 75 + Math.floor(Math.random() * 20);
+      document.getElementById("onTimeRate").textContent = `${onTimeRate}%`;
+      document.getElementById("onTimeBar").style.width = `${onTimeRate}%`;
+      
+      // Update top performers
+      const techPerformance = {};
+      Object.entries(users).forEach(([username, user]) => {
+        if (user.role === "technician") {
+          const techOrders = orders.filter(o => o.technician === username);
+          const completed = techOrders.filter(o => o.status === "completed").length;
+          techPerformance[user.name] = {
+            completed,
+            total: techOrders.length,
+            rate: techOrders.length > 0 ? Math.round((completed / techOrders.length) * 100) : 0
+          };
+        }
+      });
+      
+      const topPerformers = Object.entries(techPerformance)
+        .sort((a, b) => b[1].rate - a[1].rate)
+        .slice(0, 3);
+      
+      const topPerformersContainer = document.getElementById("topPerformers");
+      topPerformersContainer.innerHTML = "";
+      
+      topPerformers.forEach(([name, stats], index) => {
+        const medalColors = ["text-yellow-500", "text-gray-400", "text-yellow-700"];
+        const medalIcons = ["fa-trophy", "fa-medal", "fa-award"];
+        
+        topPerformersContainer.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas ${medalIcons[index]} ${medalColors[index]} mr-2"></i>
+              <span class="font-medium">${name}</span>
+            </div>
+            <span class="text-sm font-medium text-gray-700">${stats.rate}% (${stats.completed}/${stats.total})</span>
+          </div>
+        `;
+      });
+      
+      // Update technician overview
+      const superDataContainer = document.getElementById("superData");
+      superDataContainer.innerHTML = "";
+      
+      Object.entries(users).forEach(([username, user]) => {
+        if (user.role === "technician") {
+          const techOrders = orders.filter(o => o.technician === username);
+          const completed = techOrders.filter(o => o.status === "completed").length;
+          const pending = techOrders.length - completed;
+          
+          superDataContainer.innerHTML += `
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="flex justify-between items-center mb-2">
+                <h4 class="font-medium">${user.name}</h4>
+                <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">${techOrders.length} orders</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <span class="text-xs text-gray-500">Completed</span>
+                  <p class="font-medium">${completed}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-gray-500">Pending</span>
+                  <p class="font-medium">${pending}</p>
+                </div>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-1.5">
+                <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${techOrders.length > 0 ? Math.round((completed / techOrders.length) * 100) : 0}%"></div>
+              </div>
+            </div>
+          `;
+        }
+      });
+      
+      // Update inventory status
+      const inventoryContainer = document.getElementById("inventoryStatus");
+      inventoryContainer.innerHTML = "";
+      
+      inventory.forEach(item => {
+        let statusColor = "text-green-500";
+        let statusIcon = "fa-check-circle";
+        
+        if (item.qty < 5) {
+          statusColor = "text-red-500";
+          statusIcon = "fa-exclamation-circle";
+        } else if (item.qty <= 15) {
+          statusColor = "text-yellow-500";
+          statusIcon = "fa-exclamation-triangle";
         }
         
-        document.getElementById("loginBox").style.display = "none";
-        showDashboard(user.role, user);
+        inventoryContainer.innerHTML += `
+          <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas ${statusIcon} ${statusColor} mr-2"></i>
+              <span class="text-sm">${item.name}</span>
+            </div>
+            <span class="text-sm font-medium">${item.qty}</span>
+          </div>
+        `;
+      });
+    }
+
+    // Notification functions
+    function updateNotifications() {
+      const unreadCount = notifications.filter(n => !n.read).length;
+      const notificationCount = document.getElementById("notificationCount");
+      
+      if (unreadCount > 0) {
+        notificationCount.textContent = unreadCount;
+        notificationCount.classList.remove("hidden");
       } else {
-        alert("Invalid credentials.");
+        notificationCount.classList.add("hidden");
       }
-    }
-
-    function logout() {
-      document.querySelectorAll(".dashboard").forEach(el => el.style.display = "none");
-      document.getElementById("loginBox").style.display = "flex";
-    }
-
-    function showDashboard(role, user) {
-      // Hide all dashboards first
-      document.querySelectorAll(".dashboard").forEach(el => {
-        el.style.display = "none";
-        el.classList.remove('hidden');
+      
+      // Update notification list
+      const notificationList = document.getElementById("notificationList");
+      notificationList.innerHTML = "";
+      
+      // Show latest 5 notifications
+      const recentNotifications = [...notifications].reverse().slice(0, 5);
+      
+      recentNotifications.forEach(notification => {
+        let iconClass = "fa-info-circle text-blue-500";
+        if (notification.type === "success") iconClass = "fa-check-circle text-green-500";
+        else if (notification.type === "warning") iconClass = "fa-exclamation-triangle text-yellow-500";
+        else if (notification.type === "error") iconClass = "fa-times-circle text-red-500";
+        
+        notificationList.innerHTML += `
+          <div class="px-4 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer flex items-start ${notification.read ? 'bg-white' : 'bg-blue-50'}" 
+               onclick="markNotificationRead(${notification.id})">
+            <i class="fas ${iconClass} mt-1 mr-3"></i>
+            <div>
+              <p class="text-sm">${notification.message}</p>
+              <p class="text-xs text-gray-500">${new Date(notification.timestamp).toLocaleString()}</p>
+            </div>
+          </div>
+        `;
       });
       
-      // Show the appropriate dashboard
-      if (role === "admin") {
-        document.getElementById("adminDashboard").style.display = "flex";
-        document.getElementById("adminName").textContent = user.name;
-        setupSidebarToggle('mobileSidebarToggle', 'adminDashboard .sidebar');
-        setupSidebarToggle('sidebarToggle', 'adminDashboard .sidebar');
-      } else if (role === "technician") {
-        document.getElementById("technicianDashboard").style.display = "flex";
-        document.getElementById("techName").textContent = user.name;
-        document.getElementById("techFirstName").textContent = user.firstName;
-        setupSidebarToggle('mobileTechSidebarToggle', 'technicianDashboard .sidebar');
-        setupSidebarToggle('techSidebarToggle', 'technicianDashboard .sidebar');
-      } else if (role === "supervisor") {
-        document.getElementById("supervisorDashboard").style.display = "flex";
-        document.getElementById("superName").textContent = user.name;
-        setupSidebarToggle('mobileSuperSidebarToggle', 'supervisorDashboard .sidebar');
-        setupSidebarToggle('superSidebarToggle', 'supervisorDashboard .sidebar');
-      }
-      
-      // Initialize charts after dashboard is shown
-      setTimeout(initCharts, 100);
+      // Add "View All" option
+      notificationList.innerHTML += `
+        <a href="#" class="block px-4 py-2 text-sm text-center text-blue-600 hover:bg-gray-100">
+          View All Notifications
+        </a>
+      `;
     }
 
-    // Auto refresh every 30 seconds (simulated)
-    setInterval(() => {
-      console.log("Refreshing dashboard data...");
-      // In a real app, you would fetch new data here
-    }, 30000);
+    function markNotificationRead(id) {
+      const notification = notifications.find(n => n.id === id);
+      if (notification) {
+        notification.read = true;
+        localStorage.setItem("notifications", JSON.stringify(notifications));
+        updateNotifications();
+      }
+    }
+
+    // Export functions
+    function exportToExcel() {
+      // Simulate export
+      const btn = document.createElement("div");
+      btn.className = "fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg";
+      btn.innerHTML = '<i class="fas fa-file-excel mr-2"></i> Exporting to Excel...';
+      document.body.appendChild(btn);
+      
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i> Exported successfully!';
+        setTimeout(() => {
+          btn.classList.add("opacity-0", "transition-opacity", "duration-500");
+          setTimeout(() => btn.remove(), 500);
+        }, 1000);
+      }, 1500);
+    }
+
+    function exportToPDF() {
+      // Simulate export
+      const btn = document.createElement("div");
+      btn.className = "fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg";
+      btn.innerHTML = '<i class="fas fa-file-pdf mr-2"></i> Exporting to PDF...';
+      document.body.appendChild(btn);
+      
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i> Exported successfully!';
+        setTimeout(() => {
+          btn.classList.add("opacity-0", "transition-opacity", "duration-500");
+          setTimeout(() => btn.remove(), 500);
+        }, 1000);
+      }, 1500);
+    }
+
+    // Settings function
+    function showSettings() {
+      alert("Settings panel would open here in a full implementation.");
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem("currentUser");
+      location.reload();
+    }
+
+    // Toggle sidebar
+    document.getElementById("toggleSidebar").addEventListener("click", function() {
+      const sidebar = document.getElementById("sidebar");
+      const mainContent = document.getElementById("mainContent");
+      
+      sidebar.classList.toggle("collapsed");
+      mainContent.classList.toggle("expanded");
+      
+      // Change icon
+      const icon = this.querySelector("i");
+      if (sidebar.classList.contains("collapsed")) {
+        icon.classList.remove("fa-chevron-left");
+        icon.classList.add("fa-chevron-right");
+      } else {
+        icon.classList.remove("fa-chevron-right");
+        icon.classList.add("fa-chevron-left");
+      }
+    });
+
+    // Toggle notifications dropdown
+    document.getElementById("notificationButton").addEventListener("click", function(e) {
+      e.stopPropagation();
+      document.getElementById("notificationDropdown").classList.toggle("hidden");
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", function() {
+      document.getElementById("notificationDropdown").classList.add("hidden");
+    });
+
+    // Start periodic updates for all dashboards
+    function startPeriodicUpdates() {
+      // Update every 30 seconds
+      setInterval(() => {
+        const currentUser = localStorage.getItem("currentUser");
+        if (currentUser && users[currentUser]) {
+          if (users[currentUser].role === "admin") {
+            updateAdminMetrics();
+          } else if (users[currentUser].role === "technician") {
+            displayTechOrders();
+            updateTechStats();
+          } else if (users[currentUser].role === "supervisor") {
+            renderSupervisorPanel();
+          }
+          
+          // Check for alerts
+          checkAlerts();
+        }
+      }, 30000);
+    }
+
+    // Check for alerts (e.g., inactive orders)
+    function checkAlerts() {
+      const now = new Date();
+      orders.forEach(order => {
+        const last = new Date(order.updated);
+        const diffHours = Math.abs(now - last) / 36e5;
+        
+        if (diffHours > 24 && order.status !== "completed") {
+          // Check if notification already exists
+          const exists = notifications.some(n => 
+            n.message.includes(`inactive on order ${order.id}`) && 
+            new Date(n.timestamp) > new Date(now.getTime() - 24 * 60 * 60 * 1000)
+          );
+          
+          if (!exists) {
+            notifications.push({
+              id: Date.now(),
+              type: "warning",
+              message: `Technician inactive on order ${order.id} for over 24 hours`,
+              timestamp: new Date().toISOString(),
+              read: false
+            });
+            localStorage.setItem("notifications", JSON.stringify(notifications));
+            updateNotifications();
+          }
+        }
+      });
+    }
+
+    // Initialize on page load
+    window.addEventListener("load", () => {
+      const currentUser = localStorage.getItem("currentUser");
+      if (currentUser && users[currentUser]) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("appLayout").classList.remove("hidden");
+        showDashboard(users[currentUser].role);
+        updateUserInfo();
+        updateNotifications();
+        startPeriodicUpdates();
+      }
+    });
   </script>
 </body>
 </html>
