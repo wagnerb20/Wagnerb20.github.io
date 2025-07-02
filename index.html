@@ -1,1743 +1,364 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Technician Metrics Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #004aad 0%, #002f72 100%);
-    }
-    .sidebar-item:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-    .dashboard-card {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .dashboard-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-    .form-input {
-      transition: border-color 0.3s ease;
-    }
-    .form-input:focus {
-      border-color: #004aad;
-      box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.2);
-    }
+    body { font-family: Arial; margin: 0; background: #f4f4f4; }
+    .hidden { display: none; }
+    .panel { padding: 20px; background: white; margin: 20px; border-radius: 8px; }
+    input, select, button { margin: 5px 0; padding: 8px; width: 100%; }
+    .btn { background-color: #004aad; color: white; border: none; cursor: pointer; }
+    .btn:hover { background-color: #002f72; }
   </style>
 </head>
-<body class="bg-gray-100">
-  <!-- Login Screen -->
-  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
-      <div class="gradient-bg p-6 text-white text-center">
-        <div class="flex justify-center mb-4">
-          <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center">
-            <i class="fas fa-cogs text-4xl text-blue-800"></i>
-          </div>
-        </div>
-        <h1 class="text-2xl font-bold">Technician Metrics</h1>
-        <p class="text-blue-100">Dashboard v2.0</p>
-      </div>
-      <div class="p-6">
-        <div class="mb-6">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
-            Username
-          </label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-user text-gray-400"></i>
-            </div>
-            <input id="username" type="text" class="form-input w-full pl-10 p-3 border rounded-lg focus:outline-none" placeholder="Enter your username">
-          </div>
-        </div>
-        <div class="mb-6">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
-            Password
-          </label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-lock text-gray-400"></i>
-            </div>
-            <input id="password" type="password" class="form-input w-full pl-10 p-3 border rounded-lg focus:outline-none" placeholder="Enter your password">
-          </div>
-        </div>
-        <button onclick="login()" class="w-full gradient-bg text-white py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition duration-300 flex items-center justify-center">
-          <i class="fas fa-sign-in-alt mr-2"></i> Login
-        </button>
-        <div class="mt-4 text-center text-sm text-gray-600">
-          <p>Created by Wagner Bierd</p>
-        </div>
-      </div>
-    </div>
+<body>
+  <div id="loginBox">
+    <h2>Technician Metrics Dashboard</h2>
+    <p>Created by Wagner Bierd</p>
+    <img src="logo.png" alt="COIN Logo" style="max-width: 120px;" />
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button class="btn" onclick="login()">Login</button>
   </div>
 
-  <!-- Main Dashboard Layout -->
-  <div id="dashboardLayout" class="hidden min-h-screen">
-    <!-- Sidebar -->
-    <div class="gradient-bg text-white w-64 fixed h-full overflow-y-auto">
-      <div class="p-4 flex items-center space-x-3 border-b border-blue-700">
-        <div class="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center">
-          <i class="fas fa-user-cog text-blue-800"></i>
-        </div>
-        <div>
-          <p class="font-semibold" id="currentUserName">Admin</p>
-          <p class="text-xs text-blue-200" id="currentUserRole">Administrator</p>
-        </div>
-      </div>
-      <nav class="p-4">
-        <div class="mb-6">
-          <p class="text-xs uppercase text-blue-300 tracking-wider mb-2">Main</p>
-          <a href="#" onclick="showDashboard('overview')" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-tachometer-alt w-5 text-center"></i>
-            <span>Dashboard</span>
-          </a>
-        </div>
-        
-        <div class="mb-6 admin-only">
-          <p class="text-xs uppercase text-blue-300 tracking-wider mb-2">Administration</p>
-          <a href="#" onclick="showUserForm()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-users w-5 text-center"></i>
-            <span>User Management</span>
-          </a>
-          <a href="#" onclick="showInventoryForm()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-boxes w-5 text-center"></i>
-            <span>Inventory</span>
-          </a>
-          <a href="#" onclick="showGoalForm()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-bullseye w-5 text-center"></i>
-            <span>Set Goals</span>
-          </a>
-        </div>
-        
-        <div class="mb-6 tech-only">
-          <p class="text-xs uppercase text-blue-300 tracking-wider mb-2">Technician</p>
-          <a href="#" onclick="claimOrder()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-hand-paper w-5 text-center"></i>
-            <span>Claim Order</span>
-          </a>
-          <a href="#" onclick="updateOrderStatus()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-sync-alt w-5 text-center"></i>
-            <span>Update Order</span>
-          </a>
-          <a href="#" onclick="uploadEvidence()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-cloud-upload-alt w-5 text-center"></i>
-            <span>Upload Evidence</span>
-          </a>
-        </div>
-        
-        <div class="mb-6 super-only">
-          <p class="text-xs uppercase text-blue-300 tracking-wider mb-2">Supervisor</p>
-          <a href="#" onclick="showPerformanceMetrics()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-chart-line w-5 text-center"></i>
-            <span>Performance Metrics</span>
-          </a>
-          <a href="#" onclick="showTeamOverview()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-users-cog w-5 text-center"></i>
-            <span>Team Overview</span>
-          </a>
-        </div>
-        
-        <div class="mt-8">
-          <a href="#" onclick="logout()" class="sidebar-item flex items-center space-x-3 p-2 rounded-lg text-white mb-1">
-            <i class="fas fa-sign-out-alt w-5 text-center"></i>
-            <span>Logout</span>
-          </a>
-        </div>
-      </nav>
-    </div>
+  <div id="adminPanel" class="panel hidden">
+    <h3>Admin Dashboard</h3>
+    <button class="btn" onclick="showUserForm()">Add User</button>
+    <button class="btn" onclick="showInventoryForm()">Add Inventory</button>
+    <button class="btn" onclick="showGoalForm()">Set Validator Goals</button>
+    <button class="btn" onclick="exportToExcel()">Export Excel</button>
+    <button class="btn" onclick="exportToPDF()">Export PDF</button>
+    <div id="adminForms"></div>
+  </div>
 
-    <!-- Main Content -->
-    <div class="ml-64 p-8">
-      <!-- Dashboard Header -->
-      <div class="flex justify-between items-center mb-8">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800" id="dashboardTitle">Dashboard</h1>
-          <p class="text-gray-600" id="dashboardSubtitle">Welcome back!</p>
-        </div>
-        <div class="flex space-x-4">
-          <button onclick="exportToExcel()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
-            <i class="fas fa-file-excel mr-2"></i> Export Excel
-          </button>
-          <button onclick="exportToPDF()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
-            <i class="fas fa-file-pdf mr-2"></i> Export PDF
-          </button>
-        </div>
-      </div>
+  <div id="techPanel" class="panel hidden">
+    <h3>Technician Dashboard</h3>
+    <button class="btn" onclick="claimOrder()">Claim Order</button>
+    <button class="btn" onclick="updateOrderStatus()">Update Order</button>
+    <button class="btn" onclick="uploadEvidence()">Upload Evidence</button>
+    <div id="techOrders"></div>
+  </div>
 
-      <!-- Dashboard Content -->
-      <div id="dashboardContent">
-        <!-- Overview Dashboard -->
-        <div id="overviewDashboard">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            <div class="dashboard-card bg-white p-6 rounded-xl shadow">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500">Completed Orders</p>
-                  <h3 class="text-2xl font-bold">128</h3>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <i class="fas fa-check-circle text-blue-600 text-xl"></i>
-                </div>
-              </div>
-              <div class="mt-4">
-                <div class="h-2 bg-gray-200 rounded-full">
-                  <div class="h-2 bg-green-500 rounded-full" style="width: 85%"></div>
-                </div>
-                <p class="text-sm text-gray-500 mt-2">85% of monthly goal</p>
-              </div>
-            </div>
-            
-            <div class="dashboard-card bg-white p-6 rounded-xl shadow">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500">Pending Orders</p>
-                  <h3 class="text-2xl font-bold">24</h3>
-                </div>
-                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <i class="fas fa-clock text-yellow-600 text-xl"></i>
-                </div>
-              </div>
-              <div class="mt-4">
-                <div class="h-2 bg-gray-200 rounded-full">
-                  <div class="h-2 bg-yellow-500 rounded-full" style="width: 15%"></div>
-                </div>
-                <p class="text-sm text-gray-500 mt-2">15% of total workload</p>
-              </div>
-            </div>
-            
-            <div class="dashboard-card bg-white p-6 rounded-xl shadow">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500">Average Time</p>
-                  <h3 class="text-2xl font-bold">2h 18m</h3>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <i class="fas fa-stopwatch text-purple-600 text-xl"></i>
-                </div>
-              </div>
-              <div class="mt-4">
-                <div class="h-2 bg-gray-200 rounded-full">
-                  <div class="h-2 bg-purple-500 rounded-full" style="width: 65%"></div>
-                </div>
-                <p class="text-sm text-gray-500 mt-2">12% improvement</p>
-              </div>
-            </div>
-            
-            <div class="dashboard-card bg-white p-6 rounded-xl shadow">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500">Satisfaction</p>
-                  <h3 class="text-2xl font-bold">4.8/5</h3>
-                </div>
-                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <i class="fas fa-smile text-green-600 text-xl"></i>
-                </div>
-              </div>
-              <div class="mt-4">
-                <div class="h-2 bg-gray-200 rounded-full">
-                  <div class="h-2 bg-blue-500 rounded-full" style="width: 96%"></div>
-                </div>
-                <p class="text-sm text-gray-500 mt-2">96% positive feedback</p>
-              </div>
-            </div>
-
-            <div class="dashboard-card bg-white p-6 rounded-xl shadow">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500">Goal Progress</p>
-                  <h3 class="text-2xl font-bold">85%</h3>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <i class="fas fa-bullseye text-blue-600 text-xl"></i>
-                </div>
-              </div>
-              <div class="mt-4 h-[100px]">
-                <canvas id="goalChart"></canvas>
-              </div>
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-xl shadow">
-              <h3 class="font-semibold text-lg mb-4">Weekly Performance</h3>
-              <canvas id="performanceChart" height="250"></canvas>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow">
-              <h3 class="font-semibold text-lg mb-4">Recent Activity</h3>
-              <div class="space-y-4">
-                <div class="flex items-start">
-                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-1">
-                    <i class="fas fa-user-cog text-blue-600"></i>
-                  </div>
-                  <div>
-                    <p class="font-medium">John D. completed order #4567</p>
-                    <p class="text-sm text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <div class="flex items-start">
-                  <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-1">
-                    <i class="fas fa-check-circle text-green-600"></i>
-                  </div>
-                  <div>
-                    <p class="font-medium">System maintenance completed</p>
-                    <p class="text-sm text-gray-500">Yesterday, 4:30 PM</p>
-                  </div>
-                </div>
-                <div class="flex items-start">
-                  <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3 mt-1">
-                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                  </div>
-                  <div>
-                    <p class="font-medium">Low inventory alert: Cable connectors</p>
-                    <p class="text-sm text-gray-500">Yesterday, 11:15 AM</p>
-                  </div>
-                </div>
-                <div class="flex items-start">
-                  <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3 mt-1">
-                    <i class="fas fa-tools text-purple-600"></i>
-                  </div>
-                  <div>
-                    <p class="font-medium">New technician onboarded</p>
-                    <p class="text-sm text-gray-500">Monday, 9:00 AM</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Admin Forms -->
-        <div id="adminForms" class="hidden">
-          <!-- User Management Form -->
-          <div id="userForm" class="bg-white p-6 rounded-xl shadow mb-6">
-            <h3 class="font-semibold text-lg mb-4">User Management</h3>
-            <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="newUsername">
-                  Username
-                </label>
-                <input type="text" id="newUsername" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter username">
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="newPassword">
-                  Password
-                </label>
-                <input type="password" id="newPassword" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter password">
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="userRole">
-                  Role
-                </label>
-                <select id="userRole" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-                  <option value="admin">Administrator</option>
-                  <option value="technician">Technician</option>
-                  <option value="supervisor">Supervisor</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="userEmail">
-                  Email
-                </label>
-                <input type="email" id="userEmail" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter email">
-              </div>
-              <div class="md:col-span-2">
-                <button type="button" onclick="addUser()" class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300">
-                  <i class="fas fa-user-plus mr-2"></i> Add User
-                </button>
-              </div>
-            </form>
-            
-            <div class="mt-8">
-              <h4 class="font-semibold mb-4">Current Users</h4>
-              <div class="overflow-x-auto">
-                <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                  <thead class="bg-gray-100">
-                    <tr>
-                      <th class="py-3 px-4 text-left">Username</th>
-                      <th class="py-3 px-4 text-left">Role</th>
-                      <th class="py-3 px-4 text-left">Last Login</th>
-                      <th class="py-3 px-4 text-left">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-200">
-                    <tr>
-                      <td class="py-3 px-4">Wagnerb20</td>
-                      <td class="py-3 px-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Admin</span></td>
-                      <td class="py-3 px-4">Today, 10:30 AM</td>
-                      <td class="py-3 px-4">
-                        <button class="text-blue-600 hover:text-blue-800 mr-3">
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="text-red-600 hover:text-red-800">
-                          <i class="fas fa-trash-alt"></i>
-                        </button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-3 px-4">tech1</td>
-                      <td class="py-3 px-4"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Technician</span></td>
-                      <td class="py-3 px-4">Yesterday, 4:15 PM</td>
-                      <td class="py-3 px-4">
-                        <button class="text-blue-600 hover:text-blue-800 mr-3">
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="text-red-600 hover:text-red-800">
-                          <i class="fas fa-trash-alt"></i>
-                        </button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-3 px-4">super1</td>
-                      <td class="py-3 px-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">Supervisor</span></td>
-                      <td class="py-3 px-4">Today, 8:45 AM</td>
-                      <td class="py-3 px-4">
-                        <button class="text-blue-600 hover:text-blue-800 mr-3">
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="text-red-600 hover:text-red-800">
-                          <i class="fas fa-trash-alt"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Inventory Form -->
-          <div id="inventoryForm" class="bg-white p-6 rounded-xl shadow mb-6">
-            <h3 class="font-semibold text-lg mb-4">Inventory Management</h3>
-            <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="itemName">
-                  Item Name
-                </label>
-                <input type="text" id="itemName" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter item name">
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="itemCategory">
-                  Category
-                </label>
-                <select id="itemCategory" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-                  <option value="tools">Tools</option>
-                  <option value="parts">Parts</option>
-                  <option value="consumables">Consumables</option>
-                  <option value="equipment">Equipment</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="itemQuantity">
-                  Quantity
-                </label>
-                <input type="number" id="itemQuantity" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter quantity">
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="itemThreshold">
-                  Low Stock Threshold
-                </label>
-                <input type="number" id="itemThreshold" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter threshold">
-              </div>
-              <div class="md:col-span-2">
-                <button type="button" onclick="addInventoryItem()" class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300">
-                  <i class="fas fa-box-open mr-2"></i> Add Inventory Item
-                </button>
-              </div>
-            </form>
-            
-            <div class="mt-8">
-              <h4 class="font-semibold mb-4">Current Inventory</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <div class="flex justify-between items-start">
-                    <h5 class="font-medium">Cable Connectors</h5>
-                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Parts</span>
-                  </div>
-                  <div class="mt-2">
-                    <p class="text-sm text-gray-600">Quantity: <span class="font-medium">48</span></p>
-                    <div class="h-2 bg-gray-200 rounded-full mt-2">
-                      <div class="h-2 bg-blue-500 rounded-full" style="width: 32%"></div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">Low stock (threshold: 150)</p>
-                  </div>
-                </div>
-                
-                <div class="bg-green-50 p-4 rounded-lg border border-green-100">
-                  <div class="flex justify-between items-start">
-                    <h5 class="font-medium">Multimeter</h5>
-                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Equipment</span>
-                  </div>
-                  <div class="mt-2">
-                    <p class="text-sm text-gray-600">Quantity: <span class="font-medium">12</span></p>
-                    <div class="h-2 bg-gray-200 rounded-full mt-2">
-                      <div class="h-2 bg-green-500 rounded-full" style="width: 80%"></div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">Good stock level</p>
-                  </div>
-                </div>
-                
-                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
-                  <div class="flex justify-between items-start">
-                    <h5 class="font-medium">Screwdrivers Set</h5>
-                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Tools</span>
-                  </div>
-                  <div class="mt-2">
-                    <p class="text-sm text-gray-600">Quantity: <span class="font-medium">8</span></p>
-                    <div class="h-2 bg-gray-200 rounded-full mt-2">
-                      <div class="h-2 bg-yellow-500 rounded-full" style="width: 40%"></div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">Reorder soon (threshold: 10)</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Goals Form -->
-          <div id="goalForm" class="bg-white p-6 rounded-xl shadow">
-            <h3 class="font-semibold text-lg mb-4">Set Performance Goals</h3>
-            <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="goalType">
-                  Goal Type
-                </label>
-                <select id="goalType" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-                  <option value="daily">Daily Orders</option>
-                  <option value="weekly">Weekly Orders</option>
-                  <option value="monthly">Monthly Orders</option>
-                  <option value="time">Average Time</option>
-                  <option value="satisfaction">Customer Satisfaction</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="goalValue">
-                  Target Value
-                </label>
-                <input type="number" id="goalValue" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter target value">
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="goalStart">
-                  Start Date
-                </label>
-                <input type="date" id="goalStart" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="goalEnd">
-                  End Date
-                </label>
-                <input type="date" id="goalEnd" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-              </div>
-              <div class="md:col-span-2">
-                <button type="button" onclick="setGoal()" class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300">
-                  <i class="fas fa-bullseye mr-2"></i> Set Goal
-                </button>
-              </div>
-            </form>
-            
-            <div class="mt-8">
-              <h4 class="font-semibold mb-4">Current Goals</h4>
-              <div class="space-y-4">
-                <div class="p-4 border rounded-lg">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <h5 class="font-medium">Monthly Orders</h5>
-                      <p class="text-sm text-gray-600">Target: 150 orders</p>
-                    </div>
-                    <div class="text-right">
-                      <p class="font-medium text-blue-600">85% complete</p>
-                      <p class="text-xs text-gray-500">Ends in 7 days</p>
-                    </div>
-                  </div>
-                  <div class="h-2 bg-gray-200 rounded-full mt-2">
-                    <div class="h-2 bg-blue-500 rounded-full" style="width: 85%"></div>
-                  </div>
-                </div>
-                
-                <div class="p-4 border rounded-lg">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <h5 class="font-medium">Average Time</h5>
-                      <p class="text-sm text-gray-600">Target: ≤ 2 hours</p>
-                    </div>
-                    <div class="text-right">
-                      <p class="font-medium text-green-600">1h 58m average</p>
-                      <p class="text-xs text-gray-500">On track</p>
-                    </div>
-                  </div>
-                  <div class="h-2 bg-gray-200 rounded-full mt-2">
-                    <div class="h-2 bg-green-500 rounded-full" style="width: 98%"></div>
-                  </div>
-                </div>
-                
-                <div class="p-4 border rounded-lg">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <h5 class="font-medium">Customer Satisfaction</h5>
-                      <p class="text-sm text-gray-600">Target: ≥ 4.5/5</p>
-                    </div>
-                    <div class="text-right">
-                      <p class="font-medium text-purple-600">4.8/5 current</p>
-                      <p class="text-xs text-gray-500">Exceeding target</p>
-                    </div>
-                  </div>
-                  <div class="h-2 bg-gray-200 rounded-full mt-2">
-                    <div class="h-2 bg-purple-500 rounded-full" style="width: 96%"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Technician Panels -->
-        <div id="techPanels" class="hidden">
-          <!-- Claim Order -->
-          <div id="claimOrderPanel" class="bg-white p-6 rounded-xl shadow mb-6">
-            <h3 class="font-semibold text-lg mb-4">Available Orders</h3>
-            <div class="overflow-x-auto">
-              <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="py-3 px-4 text-left">Order ID</th>
-                    <th class="py-3 px-4 text-left">Customer</th>
-                    <th class="py-3 px-4 text-left">Type</th>
-                    <th class="py-3 px-4 text-left">Priority</th>
-                    <th class="py-3 px-4 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                  <tr>
-                    <td class="py-3 px-4">#4592</td>
-                    <td class="py-3 px-4">ABC Corporation</td>
-                    <td class="py-3 px-4">Installation</td>
-                    <td class="py-3 px-4"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Medium</span></td>
-                    <td class="py-3 px-4">
-                      <button onclick="claimThisOrder('4592')" class="gradient-bg text-white px-3 py-1 rounded text-sm">
-                        <i class="fas fa-hand-paper mr-1"></i> Claim
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="py-3 px-4">#4588</td>
-                    <td class="py-3 px-4">XYZ Industries</td>
-                    <td class="py-3 px-4">Maintenance</td>
-                    <td class="py-3 px-4"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Low</span></td>
-                    <td class="py-3 px-4">
-                      <button onclick="claimThisOrder('4588')" class="gradient-bg text-white px-3 py-1 rounded text-sm">
-                        <i class="fas fa-hand-paper mr-1"></i> Claim
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="py-3 px-4">#4595</td>
-                    <td class="py-3 px-4">Global Tech</td>
-                    <td class="py-3 px-4">Repair</td>
-                    <td class="py-3 px-4"><span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">High</span></td>
-                    <td class="py-3 px-4">
-                      <button onclick="claimThisOrder('4595')" class="gradient-bg text-white px-3 py-1 rounded text-sm">
-                        <i class="fas fa-hand-paper mr-1"></i> Claim
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <!-- Update Order Status -->
-          <div id="updateOrderPanel" class="bg-white p-6 rounded-xl shadow mb-6">
-            <h3 class="font-semibold text-lg mb-4">My Active Orders</h3>
-            <div id="techOrders" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="border rounded-lg p-4">
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-medium">#4592 - Installation</h4>
-                  <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">In Progress</span>
-                </div>
-                <p class="text-sm text-gray-600 mb-3">ABC Corporation - Floor 12, Suite 1204</p>
-                <div class="flex justify-between items-center">
-                  <select class="text-sm border rounded p-2">
-                    <option>In Progress</option>
-                    <option>Pending Parts</option>
-                    <option>Completed</option>
-                    <option>On Hold</option>
-                  </select>
-                  <button class="bg-blue-500 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                    <i class="fas fa-save text-sm"></i>
-                  </button>
-                </div>
-              </div>
-              
-              <div class="border rounded-lg p-4">
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-medium">#4578 - Repair</h4>
-                  <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Pending Parts</span>
-                </div>
-                <p class="text-sm text-gray-600 mb-3">Smith & Co - Warehouse B</p>
-                <div class="flex justify-between items-center">
-                  <select class="text-sm border rounded p-2">
-                    <option>Pending Parts</option>
-                    <option>In Progress</option>
-                    <option>Completed</option>
-                    <option>On Hold</option>
-                  </select>
-                  <button class="bg-blue-500 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                    <i class="fas fa-save text-sm"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Upload Evidence -->
-          <div id="uploadEvidencePanel" class="bg-white p-6 rounded-xl shadow">
-            <h3 class="font-semibold text-lg mb-4">Upload Work Evidence</h3>
-            <div class="mb-6">
-              <label class="block text-gray-700 text-sm font-bold mb-2" for="evidenceOrder">
-                Select Order
-              </label>
-              <select id="evidenceOrder" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-                <option>#4592 - ABC Corporation - Installation</option>
-                <option>#4578 - Smith & Co - Repair</option>
-              </select>
-            </div>
-            
-            <div class="mb-6">
-              <label class="block text-gray-700 text-sm font-bold mb-2">
-                Upload Files
-              </label>
-              <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                <p class="text-gray-500 mb-2">Drag & drop files here or</p>
-                <button class="gradient-bg text-white py-2 px-4 rounded-lg">
-                  <i class="fas fa-folder-open mr-2"></i> Browse Files
-                </button>
-                <p class="text-xs text-gray-400 mt-3">Supports JPG, PNG, PDF up to 10MB</p>
-              </div>
-            </div>
-            
-            <div class="mb-6">
-              <label class="block text-gray-700 text-sm font-bold mb-2" for="evidenceNotes">
-                Work Notes
-              </label>
-              <textarea id="evidenceNotes" rows="4" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Describe the work performed..."></textarea>
-            </div>
-            
-            <button class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300 w-full">
-              <i class="fas fa-paper-plane mr-2"></i> Submit Evidence
-            </button>
-          </div>
-        </div>
-
-        <!-- Supervisor Panels -->
-        <div id="superPanels" class="hidden">
-          <!-- Performance Metrics -->
-          <div id="performanceMetricsPanel" class="bg-white p-6 rounded-xl shadow mb-6">
-            <h3 class="font-semibold text-lg mb-6">Team Performance Metrics</h3>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <div class="border rounded-lg p-4">
-                <h4 class="font-medium mb-3">Completion Rate</h4>
-                <div class="flex items-center justify-between">
-                  <div class="w-24 h-24">
-                    <canvas id="completionChart"></canvas>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-2xl font-bold">92%</p>
-                    <p class="text-sm text-gray-500">vs 88% last month</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="border rounded-lg p-4">
-                <h4 class="font-medium mb-3">Average Time</h4>
-                <div class="flex items-center justify-between">
-                  <div class="w-24 h-24">
-                    <canvas id="timeChart"></canvas>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-2xl font-bold">1h 58m</p>
-                    <p class="text-sm text-gray-500">vs 2h 12m last month</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="border rounded-lg p-4">
-                <h4 class="font-medium mb-3">Satisfaction</h4>
-                <div class="flex items-center justify-between">
-                  <div class="w-24 h-24">
-                    <canvas id="satisfactionChart"></canvas>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-2xl font-bold">4.8/5</p>
-                    <p class="text-sm text-gray-500">vs 4.6/5 last month</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="mb-6">
-              <h4 class="font-medium mb-4">Technician Performance</h4>
-              <canvas id="techPerformanceChart" height="150"></canvas>
-            </div>
-            
-            <div>
-              <h4 class="font-medium mb-4">Recent Completed Orders</h4>
-              <div class="overflow-x-auto">
-                <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                  <thead class="bg-gray-100">
-                    <tr>
-                      <th class="py-3 px-4 text-left">Order ID</th>
-                      <th class="py-3 px-4 text-left">Technician</th>
-                      <th class="py-3 px-4 text-left">Type</th>
-                      <th class="py-3 px-4 text-left">Time Taken</th>
-                      <th class="py-3 px-4 text-left">Rating</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-200">
-                    <tr>
-                      <td class="py-3 px-4">#4590</td>
-                      <td class="py-3 px-4">John D.</td>
-                      <td class="py-3 px-4">Installation</td>
-                      <td class="py-3 px-4">1h 45m</td>
-                      <td class="py-3 px-4">
-                        <div class="flex items-center">
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-3 px-4">#4587</td>
-                      <td class="py-3 px-4">Sarah M.</td>
-                      <td class="py-3 px-4">Repair</td>
-                      <td class="py-3 px-4">2h 15m</td>
-                      <td class="py-3 px-4">
-                        <div class="flex items-center">
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star-half-alt text-yellow-400"></i>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-3 px-4">#4582</td>
-                      <td class="py-3 px-4">Mike T.</td>
-                      <td class="py-3 px-4">Maintenance</td>
-                      <td class="py-3 px-4">1h 30m</td>
-                      <td class="py-3 px-4">
-                        <div class="flex items-center">
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                          <i class="fas fa-star text-yellow-400"></i>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Team Overview -->
-          <div id="teamOverviewPanel" class="bg-white p-6 rounded-xl shadow">
-            <h3 class="font-semibold text-lg mb-6">Team Overview</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div class="border rounded-lg p-4 text-center">
-                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <i class="fas fa-users text-blue-600 text-xl"></i>
-                </div>
-                <h4 class="font-medium">Team Size</h4>
-                <p class="text-2xl font-bold">12</p>
-              </div>
-              
-              <div class="border rounded-lg p-4 text-center">
-                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                </div>
-                <h4 class="font-medium">Active Today</h4>
-                <p class="text-2xl font-bold">9</p>
-              </div>
-              
-              <div class="border rounded-lg p-4 text-center">
-                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <i class="fas fa-clock text-yellow-600 text-xl"></i>
-                </div>
-                <h4 class="font-medium">Avg. Experience</h4>
-                <p class="text-2xl font-bold">3.2y</p>
-              </div>
-              
-              <div class="border rounded-lg p-4 text-center">
-                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <i class="fas fa-certificate text-purple-600 text-xl"></i>
-                </div>
-                <h4 class="font-medium">Certifications</h4>
-                <p class="text-2xl font-bold">28</p>
-              </div>
-            </div>
-            
-            <div class="mb-8">
-              <h4 class="font-medium mb-4">Technician Workload</h4>
-              <div class="space-y-3">
-                <div>
-                  <div class="flex justify-between mb-1">
-                    <span class="font-medium">John D.</span>
-                    <span class="text-sm text-gray-600">14/18 orders (78%)</span>
-                  </div>
-                  <div class="h-3 bg-gray-200 rounded-full">
-                    <div class="h-3 bg-blue-500 rounded-full" style="width: 78%"></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div class="flex justify-between mb-1">
-                    <span class="font-medium">Sarah M.</span>
-                    <span class="text-sm text-gray-600">12/15 orders (80%)</span>
-                  </div>
-                  <div class="h-3 bg-gray-200 rounded-full">
-                    <div class="h-3 bg-green-500 rounded-full" style="width: 80%"></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div class="flex justify-between mb-1">
-                    <span class="font-medium">Mike T.</span>
-                    <span class="text-sm text-gray-600">8/12 orders (67%)</span>
-                  </div>
-                  <div class="h-3 bg-gray-200 rounded-full">
-                    <div class="h-3 bg-yellow-500 rounded-full" style="width: 67%"></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div class="flex justify-between mb-1">
-                    <span class="font-medium">Lisa P.</span>
-                    <span class="text-sm text-gray-600">5/10 orders (50%)</span>
-                  </div>
-                  <div class="h-3 bg-gray-200 rounded-full">
-                    <div class="h-3 bg-orange-500 rounded-full" style="width: 50%"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 class="font-medium mb-4">Team Members</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="border rounded-lg p-4 flex items-center space-x-3">
-                  <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user text-blue-600"></i>
-                  </div>
-                  <div>
-                    <h5 class="font-medium">John D.</h5>
-                    <p class="text-sm text-gray-600">Senior Technician</p>
-                    <div class="flex mt-1">
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="border rounded-lg p-4 flex items-center space-x-3">
-                  <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user text-green-600"></i>
-                  </div>
-                  <div>
-                    <h5 class="font-medium">Sarah M.</h5>
-                    <p class="text-sm text-gray-600">Technician</p>
-                    <div class="flex mt-1">
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="border rounded-lg p-4 flex items-center space-x-3">
-                  <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user text-purple-600"></i>
-                  </div>
-                  <div>
-                    <h5 class="font-medium">Mike T.</h5>
-                    <p class="text-sm text-gray-600">Technician</p>
-                    <div class="flex mt-1">
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                      <i class="fas fa-star text-yellow-400 text-xs"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div id="superPanel" class="panel hidden">
+    <h3>Supervisor Dashboard</h3>
+    <canvas id="goalChart" width="400" height="150"></canvas>
+    <div id="superData"></div>
   </div>
 
   <script>
-    // Sample user data
     const users = {
-      "Wagnerb20": { 
-        password: "291179wer", 
-        role: "admin", 
-        name: "Wagner Bierd",
-        firstLogin: true 
-      },
-      "tech1": { 
-        password: "1234", 
-        role: "technician",
-        name: "John Technician",
-        firstLogin: true 
-      },
-      "super1": { 
-        password: "5678", 
-        role: "supervisor",
-        name: "Sarah Supervisor",
-        firstLogin: true 
-      }
+      "Wagnerb20": { password: "291179wer", role: "admin", firstLogin: true },
+      "tech1": { password: "1234", role: "technician", firstLogin: true },
+      "super1": { password: "5678", role: "supervisor", firstLogin: true }
     };
 
-    // Current user
-    let currentUser = null;
-
-    // Login function
     function login() {
-      const username = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
-      
-      if (users[username] && users[username].password === password) {
-        currentUser = {
-          username: username,
-          ...users[username]
-        };
-        
-        // Update UI and store session
-        localStorage.setItem("currentUser", username);
-        document.getElementById("loginScreen").classList.add("hidden");
-        document.getElementById("dashboardLayout").classList.remove("hidden");
-        document.getElementById("currentUserName").textContent = currentUser.name;
-        document.getElementById("currentUserRole").textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-        
-        // Show/hide sidebar items based on role
-        const adminItems = document.querySelectorAll('.admin-only');
-        const techItems = document.querySelectorAll('.tech-only');
-        const superItems = document.querySelectorAll('.super-only');
-        
-        adminItems.forEach(item => item.style.display = currentUser.role === 'admin' ? 'block' : 'none');
-        techItems.forEach(item => item.style.display = currentUser.role === 'technician' ? 'block' : 'none');
-        superItems.forEach(item => item.style.display = currentUser.role === 'supervisor' ? 'block' : 'none');
-        
-        // Show appropriate dashboard
-        showDashboard('overview');
-        
-        // Initialize charts
-        setTimeout(initializeCharts, 100);
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+      if (users[u] && users[u].password === p) {
+        localStorage.setItem("currentUser", u);
+        document.getElementById("loginBox").classList.add("hidden");
+        showDashboard(users[u].role);
       } else {
-        alert("Invalid username or password");
+        alert("Invalid credentials");
       }
-    }
-    
-    // Logout function
-    function logout() {
-      currentUser = null;
-      localStorage.removeItem("currentUser");
-      document.getElementById("dashboardLayout").classList.add("hidden");
-      document.getElementById("loginScreen").classList.remove("hidden");
-      document.getElementById("username").value = "";
-      document.getElementById("password").value = "";
-    }
-    
-    // Show dashboard view
-    function showDashboard(view) {
-      // Hide all content panels
-      document.getElementById('overviewDashboard').classList.add('hidden');
-      document.getElementById('adminForms').classList.add('hidden');
-      document.getElementById('techPanels').classList.add('hidden');
-      document.getElementById('superPanels').classList.add('hidden');
-      
-      // Hide all admin forms
-      document.getElementById('userForm').classList.add('hidden');
-      document.getElementById('inventoryForm').classList.add('hidden');
-      document.getElementById('goalForm').classList.add('hidden');
-      
-      // Hide all tech panels
-      document.getElementById('claimOrderPanel').classList.add('hidden');
-      document.getElementById('updateOrderPanel').classList.add('hidden');
-      document.getElementById('uploadEvidencePanel').classList.add('hidden');
-      
-      // Hide all super panels
-      document.getElementById('performanceMetricsPanel').classList.add('hidden');
-      document.getElementById('teamOverviewPanel').classList.add('hidden');
-      
-      // Update title
-      let title = "Dashboard";
-      let subtitle = "Welcome back!";
-      
-      // Show requested view
-      if (view === 'overview') {
-        document.getElementById('overviewDashboard').classList.remove('hidden');
-        title = "Dashboard Overview";
-        subtitle = "Your key metrics at a glance";
-      } 
-      else if (view === 'userForm') {
-        document.getElementById('adminForms').classList.remove('hidden');
-        document.getElementById('userForm').classList.remove('hidden');
-        title = "User Management";
-        subtitle = "Add and manage system users";
-      }
-      else if (view === 'inventoryForm') {
-        document.getElementById('adminForms').classList.remove('hidden');
-        document.getElementById('inventoryForm').classList.remove('hidden');
-        title = "Inventory Management";
-        subtitle = "Track and manage inventory items";
-      }
-      else if (view === 'goalForm') {
-        document.getElementById('adminForms').classList.remove('hidden');
-        document.getElementById('goalForm').classList.remove('hidden');
-        title = "Performance Goals";
-        subtitle = "Set and track team goals";
-      }
-      else if (view === 'claimOrder') {
-        document.getElementById('techPanels').classList.remove('hidden');
-        document.getElementById('claimOrderPanel').classList.remove('hidden');
-        title = "Claim Order";
-        subtitle = "Select an order to work on";
-      }
-      else if (view === 'updateOrderStatus') {
-        document.getElementById('techPanels').classList.remove('hidden');
-        document.getElementById('updateOrderPanel').classList.remove('hidden');
-        title = "Update Order Status";
-        subtitle = "Update your active orders";
-      }
-      else if (view === 'uploadEvidence') {
-        document.getElementById('techPanels').classList.remove('hidden');
-        document.getElementById('uploadEvidencePanel').classList.remove('hidden');
-        title = "Upload Work Evidence";
-        subtitle = "Submit proof of completed work";
-      }
-      else if (view === 'performanceMetrics') {
-        document.getElementById('superPanels').classList.remove('hidden');
-        document.getElementById('performanceMetricsPanel').classList.remove('hidden');
-        title = "Performance Metrics";
-        subtitle = "Team performance analytics";
-      }
-      else if (view === 'teamOverview') {
-        document.getElementById('superPanels').classList.remove('hidden');
-        document.getElementById('teamOverviewPanel').classList.remove('hidden');
-        title = "Team Overview";
-        subtitle = "View and manage your team";
-      }
-      
-      // Update dashboard title
-      document.getElementById('dashboardTitle').textContent = title;
-      document.getElementById('dashboardSubtitle').textContent = subtitle;
-    }
-    
-    // Shortcut functions for sidebar
-    function showUserForm() { 
-      showDashboard('userForm');
-      document.getElementById("userForm").innerHTML = `
-        <h3 class="font-semibold text-lg mb-4">User Management</h3>
-        <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="newUsername">
-              Username
-            </label>
-            <input type="text" id="newUsername" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter username">
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="newPassword">
-              Password
-            </label>
-            <input type="password" id="newPassword" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter password">
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="userRole">
-              Role
-            </label>
-            <select id="userRole" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-              <option value="admin">Administrator</option>
-              <option value="technician">Technician</option>
-              <option value="supervisor">Supervisor</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="userEmail">
-              Email
-            </label>
-            <input type="email" id="userEmail" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter email">
-          </div>
-          <div class="md:col-span-2">
-            <button type="button" onclick="addUser()" class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300">
-              <i class="fas fa-user-plus mr-2"></i> Add User
-            </button>
-          </div>
-        </form>
-      `;
-    }
-    
-    function showInventoryForm() { 
-      showDashboard('inventoryForm');
-      document.getElementById("inventoryForm").innerHTML = `
-        <h3 class="font-semibold text-lg mb-4">Inventory Management</h3>
-        <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="itemName">
-              Item Name
-            </label>
-            <input type="text" id="itemName" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter item name">
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="itemCategory">
-              Category
-            </label>
-            <select id="itemCategory" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-              <option value="tools">Tools</option>
-              <option value="parts">Parts</option>
-              <option value="consumables">Consumables</option>
-              <option value="equipment">Equipment</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="itemQuantity">
-              Quantity
-            </label>
-            <input type="number" id="itemQuantity" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter quantity">
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="itemThreshold">
-              Low Stock Threshold
-            </label>
-            <input type="number" id="itemThreshold" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter threshold">
-          </div>
-          <div class="md:col-span-2">
-            <button type="button" onclick="addInventoryItem()" class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300">
-              <i class="fas fa-box-open mr-2"></i> Add Inventory Item
-            </button>
-          </div>
-        </form>
-      `;
-    }
-    
-    function showGoalForm() { 
-      showDashboard('goalForm');
-      document.getElementById("goalForm").innerHTML = `
-        <h3 class="font-semibold text-lg mb-4">Set Performance Goals</h3>
-        <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="goalType">
-              Goal Type
-            </label>
-            <select id="goalType" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-              <option value="daily">Daily Orders</option>
-              <option value="weekly">Weekly Orders</option>
-              <option value="monthly">Monthly Orders</option>
-              <option value="time">Average Time</option>
-              <option value="satisfaction">Customer Satisfaction</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="goalValue">
-              Target Value
-            </label>
-            <input type="number" id="goalValue" class="form-input w-full p-3 border rounded-lg focus:outline-none" placeholder="Enter target value">
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="goalStart">
-              Start Date
-            </label>
-            <input type="date" id="goalStart" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="goalEnd">
-              End Date
-            </label>
-            <input type="date" id="goalEnd" class="form-input w-full p-3 border rounded-lg focus:outline-none">
-          </div>
-          <div class="md:col-span-2">
-            <button type="button" onclick="setGoal()" class="gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition duration-300">
-              <i class="fas fa-bullseye mr-2"></i> Set Goal
-            </button>
-          </div>
-        </form>
-      `;
-    }
-    function claimOrder() { showDashboard('claimOrder'); }
-    function updateOrderStatus() { showDashboard('updateOrderStatus'); }
-    function uploadEvidence() { showDashboard('uploadEvidence'); }
-    function showPerformanceMetrics() { showDashboard('performanceMetrics'); }
-    function showTeamOverview() { showDashboard('teamOverview'); }
-    
-    // Claim specific order
-    function claimThisOrder(orderId) {
-      alert(`Order #${orderId} claimed successfully!`);
-      // In a real app, you would update the UI and backend here
-    }
-    
-    // Initialize charts
-    function initializeCharts() {
-      // Performance Chart
-      const perfCtx = document.getElementById('performanceChart').getContext('2d');
-      new Chart(perfCtx, {
-        type: 'line',
-        data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-          datasets: [{
-            label: 'Completed Orders',
-            data: [12, 19, 15, 21, 18, 9],
-            borderColor: '#004aad',
-            backgroundColor: 'rgba(0, 74, 173, 0.1)',
-            tension: 0.3,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-      
-      // Completion Chart (Doughnut)
-      const completionCtx = document.getElementById('completionChart').getContext('2d');
-      new Chart(completionCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Completed', 'Remaining'],
-          datasets: [{
-            data: [92, 8],
-            backgroundColor: ['#004aad', '#e5e7eb'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
-        }
-      });
-      
-      // Time Chart (Doughnut)
-      const timeCtx = document.getElementById('timeChart').getContext('2d');
-      new Chart(timeCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['On Target', 'Over'],
-          datasets: [{
-            data: [85, 15],
-            backgroundColor: ['#10b981', '#e5e7eb'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
-        }
-      });
-      
-      // Satisfaction Chart (Doughnut)
-      const satisfactionCtx = document.getElementById('satisfactionChart').getContext('2d');
-      new Chart(satisfactionCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Rating', 'Remaining'],
-          datasets: [{
-            data: [96, 4],
-            backgroundColor: ['#8b5cf6', '#e5e7eb'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
-        }
-      });
-      
-      // Technician Performance Chart
-      const techPerfCtx = document.getElementById('techPerformanceChart').getContext('2d');
-      new Chart(techPerfCtx, {
-        type: 'bar',
-        data: {
-          labels: ['John D.', 'Sarah M.', 'Mike T.', 'Lisa P.', 'Alex K.'],
-          datasets: [
-            {
-              label: 'Completed',
-              data: [18, 15, 12, 10, 8],
-              backgroundColor: '#004aad'
-            },
-            {
-              label: 'Pending',
-              data: [2, 3, 4, 5, 4],
-              backgroundColor: '#e5e7eb'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              stacked: true,
-            },
-            y: {
-              stacked: true,
-              beginAtZero: true
-            }
-          }
-        }
-      });
-    }
-    
-    // Order management
-    let orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    
-    function claimOrder() {
-      const newOrder = {
-        id: "ORD" + (orders.length + 1),
-        technician: currentUser.username,
-        status: "in progress",
-        created: new Date().toLocaleString(),
-        updated: new Date().toLocaleString(),
-        notes: "",
-        evidence: ""
-      };
-      orders.push(newOrder);
-      localStorage.setItem("orders", JSON.stringify(orders));
-      alert("Order claimed successfully!");
-      displayTechOrders();
-    }
-    
-    function updateOrderStatus() {
-      const id = prompt("Enter Order ID to update:");
-      const order = orders.find(o => o.id === id);
-      if (!order) {
-        alert("Order not found.");
-        return;
-      }
-      const status = prompt("Set status (completed/not completed/needs parts):");
-      order.status = status;
-      order.updated = new Date().toLocaleString();
-      order.notes = prompt("Enter any notes:");
-      localStorage.setItem("orders", JSON.stringify(orders));
-      alert("Order updated successfully!");
-      displayTechOrders();
-    }
-    
-    function uploadEvidence() {
-      const id = prompt("Enter Order ID to upload evidence:");
-      const order = orders.find(o => o.id === id);
-      if (!order) {
-        alert("Order not found.");
-        return;
-      }
-      const file = prompt("Simulate upload (enter image URL or description):");
-      order.evidence = file;
-      order.updated = new Date().toLocaleString();
-      localStorage.setItem("orders", JSON.stringify(orders));
-      alert("Evidence added successfully!");
-      displayTechOrders();
-    }
-    
-    function displayTechOrders() {
-      const techOrders = orders.filter(o => o.technician === currentUser.username);
-      const container = document.getElementById("techOrders");
-      container.innerHTML = "";
-      
-      techOrders.forEach(o => {
-        container.innerHTML += `
-          <div class="border rounded-lg p-4">
-            <div class="flex justify-between items-start mb-2">
-              <h4 class="font-medium">${o.id}</h4>
-              <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">${o.status}</span>
-            </div>
-            <p class="text-sm text-gray-600 mb-1"><strong>Created:</strong> ${o.created}</p>
-            <p class="text-sm text-gray-600 mb-1"><strong>Updated:</strong> ${o.updated}</p>
-            <p class="text-sm text-gray-600 mb-3"><strong>Notes:</strong> ${o.notes || "-"}</p>
-            <p class="text-sm text-gray-600 mb-3"><strong>Evidence:</strong> ${o.evidence || "-"}</p>
-            <button onclick="updateOrderStatus()" class="gradient-bg text-white px-3 py-1 rounded text-sm w-full">
-              <i class="fas fa-sync-alt mr-1"></i> Update Status
-            </button>
-          </div>
-        `;
-      });
-      
-      if (techOrders.length === 0) {
-        container.innerHTML = '<p class="text-gray-500">No orders claimed yet.</p>';
-      }
-    }
-    
-    // Auto-load orders when technician logs in
-    if (currentUser?.role === 'technician') {
-      setTimeout(displayTechOrders, 100);
     }
 
-    // Goal chart for supervisors
-    function renderSupervisorPanel() {
-      const goal = 2000;
-      const completedOrders = orders.filter(o => o.status === "completed").length;
-      
-      const ctx = document.getElementById('goalChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Completed', 'Remaining'],
-          datasets: [{
-            label: 'Validator Builds',
-            data: [completedOrders, goal - completedOrders],
-            backgroundColor: ['#00cc66', '#cccccc'],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'bottom'
-            }
-          }
-        }
-      });
+    function showDashboard(role) {
+      document.getElementById("adminPanel").classList.add("hidden");
+      document.getElementById("techPanel").classList.add("hidden");
+      document.getElementById("superPanel").classList.add("hidden");
 
-      const superData = document.querySelector('#performanceMetricsPanel > div:nth-child(3)');
-      superData.insertAdjacentHTML('afterend', `
-        <div class="mt-6">
-          <h4 class="font-medium mb-4">Technicians Overview</h4>
-          <div id="techOverview" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      if (role === "admin") document.getElementById("adminPanel").classList.remove("hidden");
+      if (role === "technician") document.getElementById("techPanel").classList.remove("hidden");
+      if (role === "supervisor") document.getElementById("superPanel").classList.remove("hidden");
+    }
+  </script>
+  <script>
+  function showUserForm() {
+    document.getElementById("adminForms").innerHTML = `
+      <h4>Add User</h4>
+      <input id="newUsername" placeholder="Username" />
+      <input id="newPassword" placeholder="Password" type="password" />
+      <select id="newRole">
+        <option value="technician">Technician</option>
+        <option value="supervisor">Supervisor</option>
+      </select>
+      <button class="btn" onclick="addUser()">Create</button>
+    `;
+  }
+
+  function addUser() {
+    const user = document.getElementById("newUsername").value;
+    const pass = document.getElementById("newPassword").value;
+    const role = document.getElementById("newRole").value;
+    if (!user || !pass) {
+      alert("Please enter all user fields.");
+      return;
+    }
+    if (users[user]) {
+      alert("User already exists.");
+      return;
+    }
+    users[user] = { password: pass, role: role, firstLogin: true };
+    localStorage.setItem("users", JSON.stringify(users));
+    alert("User created.");
+    document.getElementById("adminForms").innerHTML = "";
+  }
+
+  function showInventoryForm() {
+    document.getElementById("adminForms").innerHTML = `
+      <h4>Add Inventory Item</h4>
+      <input id="invName" placeholder="Item Name" />
+      <input id="invQty" type="number" placeholder="Quantity" />
+      <select id="invCat">
+        <option value="validator">Validator Parts</option>
+        <option value="cable">Cables</option>
+        <option value="screen">Screens</option>
+      </select>
+      <button class="btn" onclick="addInventory()">Add</button>
+    `;
+  }
+
+  let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
+
+  function addInventory() {
+    const name = document.getElementById("invName").value;
+    const qty = parseInt(document.getElementById("invQty").value);
+    const cat = document.getElementById("invCat").value;
+    if (!name || isNaN(qty)) {
+      alert("Invalid inventory data.");
+      return;
+    }
+    inventory.push({ name, qty, cat });
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+    alert("Inventory added.");
+    document.getElementById("adminForms").innerHTML = "";
+  }
+
+  function showGoalForm() {
+    document.getElementById("adminForms").innerHTML = `
+      <h4>Set Validator Goal</h4>
+      <select id="goalBrand">
+        <option value="MEI">MEI</option>
+        <option value="UBA">UBA</option>
+        <option value="JCM">JCM</option>
+      </select>
+      <input id="goalModel" placeholder="Model" />
+      <input id="goalQty" type="number" placeholder="Daily Minimum" />
+      <button class="btn" onclick="addGoal()">Set Goal</button>
+    `;
+  }
+
+  let validatorGoals = JSON.parse(localStorage.getItem("validatorGoals") || "[]");
+
+  function addGoal() {
+    const brand = document.getElementById("goalBrand").value;
+    const model = document.getElementById("goalModel").value;
+    const qty = parseInt(document.getElementById("goalQty").value);
+    if (!brand || !model || isNaN(qty)) {
+      alert("Invalid goal data.");
+      return;
+    }
+    validatorGoals.push({ brand, model, qty });
+    localStorage.setItem("validatorGoals", JSON.stringify(validatorGoals));
+    alert("Goal set.");
+    document.getElementById("adminForms").innerHTML = "";
+  }
+</script>
+  <script>
+  let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+
+  function claimOrder() {
+    const currentUser = localStorage.getItem("currentUser");
+    const newOrder = {
+      id: "ORD" + (orders.length + 1),
+      technician: currentUser,
+      status: "in progress",
+      created: new Date().toLocaleString(),
+      updated: new Date().toLocaleString(),
+      notes: "",
+      evidence: ""
+    };
+    orders.push(newOrder);
+    localStorage.setItem("orders", JSON.stringify(orders));
+    alert("Order claimed.");
+    displayTechOrders();
+  }
+
+  function updateOrderStatus() {
+    const id = prompt("Enter Order ID to update:");
+    const order = orders.find(o => o.id === id);
+    if (!order) {
+      alert("Order not found.");
+      return;
+    }
+    const status = prompt("Set status: completed, not completed, needs parts:");
+    order.status = status;
+    order.updated = new Date().toLocaleString();
+    order.notes = prompt("Enter any notes:");
+    localStorage.setItem("orders", JSON.stringify(orders));
+    alert("Order updated.");
+    displayTechOrders();
+  }
+
+  function uploadEvidence() {
+    const id = prompt("Enter Order ID to upload evidence:");
+    const order = orders.find(o => o.id === id);
+    if (!order) {
+      alert("Order not found.");
+      return;
+    }
+    const file = prompt("Simulate upload (enter image URL or description):");
+    order.evidence = file;
+    order.updated = new Date().toLocaleString();
+    localStorage.setItem("orders", JSON.stringify(orders));
+    alert("Evidence added.");
+    displayTechOrders();
+  }
+
+  function displayTechOrders() {
+    const currentUser = localStorage.getItem("currentUser");
+    const techOrders = orders.filter(o => o.technician === currentUser);
+    const container = document.getElementById("techOrders");
+    container.innerHTML = "<h4>Your Orders</h4>";
+    techOrders.forEach(o => {
+      container.innerHTML += `
+        <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+          <strong>ID:</strong> ${o.id} <br>
+          <strong>Status:</strong> ${o.status} <br>
+          <strong>Created:</strong> ${o.created} <br>
+          <strong>Updated:</strong> ${o.updated} <br>
+          <strong>Notes:</strong> ${o.notes || "-"} <br>
+          <strong>Evidence:</strong> ${o.evidence || "-"}
         </div>
-        <div class="mt-6">
-          <h4 class="font-medium mb-4">Inventory Status</h4>
-          <div id="inventoryOverview" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
-        </div>
-      `);
+      `;
+    });
+  }
 
-      const techOverview = document.getElementById("techOverview");
-      const inventoryOverview = document.getElementById("inventoryOverview");
-      
-      Object.keys(users).forEach(user => {
-        if (users[user].role === "technician") {
-          const userOrders = orders.filter(o => o.technician === user);
-          const completed = userOrders.filter(o => o.status === "completed").length;
-          const pending = userOrders.filter(o => o.status !== "completed").length;
-          
-          techOverview.innerHTML += `
-            <div class="border rounded-lg p-4">
-              <div class="flex justify-between">
-                <h5 class="font-medium">${user}</h5>
-                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Technician</span>
-              </div>
-              <div class="mt-2">
-                <p class="text-sm text-gray-600">Completed: <span class="font-medium">${completed}</span></p>
-                <p class="text-sm text-gray-600">Pending: <span class="font-medium">${pending}</span></p>
-              </div>
-            </div>
-          `;
+  // Optional: auto-load orders when technician logs in
+  const current = localStorage.getItem("currentUser");
+  if (users[current]?.role === "technician") {
+    window.onload = () => displayTechOrders();
+  }
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  function renderSupervisorPanel() {
+    const goal = 2000; // Global goal
+    const totalCompleted = orders.filter(o => o.status === "completed").length;
+
+    const ctx = document.getElementById('goalChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Completed', 'Remaining'],
+        datasets: [{
+          label: 'Validator Builds',
+          data: [totalCompleted, goal - totalCompleted],
+          backgroundColor: ['#00cc66', '#cccccc'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
         }
-      });
-
-      inventory.forEach(item => {
-        let status = "Good";
-        let color = "text-green-500";
-        if (item.qty < 5) {
-          status = "Critical";
-          color = "text-red-500";
-        } else if (item.qty <= 15) {
-          status = "Low";
-          color = "text-yellow-500";
-        }
-        
-        inventoryOverview.innerHTML += `
-          <div class="border rounded-lg p-4">
-            <div class="flex justify-between">
-              <h5 class="font-medium">${item.name}</h5>
-              <span class="${color} font-medium">${status}</span>
-            </div>
-            <div class="mt-2">
-              <p class="text-sm text-gray-600">Quantity: <span class="font-medium">${item.qty}</span></p>
-              <p class="text-sm text-gray-600">Category: <span class="font-medium">${item.cat}</span></p>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    // Auto-load supervisor panel when supervisor logs in
-    if (currentUser?.role === 'supervisor') {
-      setTimeout(renderSupervisorPanel, 100);
-    }
-
-    // Auto-refresh every 10 seconds for metrics
-    function updateMetrics() {
-      if (currentUser?.role === 'technician') {
-        displayTechOrders();
-      } else if (currentUser?.role === 'supervisor') {
-        renderSupervisorPanel();
-      }
-    }
-    setInterval(updateMetrics, 10000);
-
-    // Alert simulation
-    function checkAlerts() {
-      const now = new Date();
-      orders.forEach(order => {
-        const last = new Date(order.updated);
-        const diffHours = Math.abs(now - last) / 36e5;
-        if (diffHours > 24 && order.status !== "completed") {
-          console.log("Alert: Technician inactive on order " + order.id);
-          alert("Technician inactive on order " + order.id + " for over 24 hours.");
-        }
-      });
-    }
-    setInterval(checkAlerts, 60000); // Every minute
-
-    // Session check on page load
-    window.addEventListener("load", () => {
-      const current = localStorage.getItem("currentUser");
-      if (current && users[current]) {
-        currentUser = {
-          username: current,
-          ...users[current]
-        };
-        document.getElementById("loginScreen").classList.add("hidden");
-        document.getElementById("dashboardLayout").classList.remove("hidden");
-        showDashboard('overview');
       }
     });
 
-    // Export functions
-    function exportToExcel() {
-      alert('Export to Excel functionality would go here');
-      // In a real app, this would generate and download an Excel file
-    }
-    
-    function exportToPDF() {
-      alert('Export to PDF functionality would go here');
-      // In a real app, this would generate and download a PDF file
-    }
-    
-    // Add user function
-    function addUser() {
-      const user = document.getElementById('newUsername').value;
-      const pass = document.getElementById('newPassword').value;
-      const role = document.getElementById('userRole').value;
-      
-      if (!user || !pass) {
-        alert("Please enter all user fields.");
-        return;
+    const superData = document.getElementById("superData");
+    superData.innerHTML = "<h4>Technicians Overview</h4>";
+    const userKeys = Object.keys(users);
+    userKeys.forEach(user => {
+      if (users[user].role === "technician") {
+        const userOrders = orders.filter(o => o.technician === user);
+        const completed = userOrders.filter(o => o.status === "completed").length;
+        const pending = userOrders.filter(o => o.status !== "completed").length;
+        superData.innerHTML += `
+          <div style="margin-bottom:15px;">
+            <strong>${user}</strong><br>
+            Completed Orders: ${completed}<br>
+            Pending Orders: ${pending}
+          </div>
+        `;
       }
-      if (users[user]) {
-        alert("User already exists.");
-        return;
-      }
-      users[user] = { 
-        password: pass, 
-        role: role, 
-        firstLogin: true,
-        name: user,
-        email: document.getElementById('userEmail').value || ''
-      };
-      localStorage.setItem("users", JSON.stringify(users));
-      alert("User created successfully!");
-      document.getElementById('newUsername').value = '';
-      document.getElementById('newPassword').value = '';
-      document.getElementById('userEmail').value = '';
-      showUserForm(); // Refresh the form
+    });
+
+    superData.innerHTML += "<h4>Inventory Status</h4>";
+    inventory.forEach(item => {
+      let color = "🟢";
+      if (item.qty < 5) color = "🔴";
+      else if (item.qty <= 15) color = "🟡";
+      superData.innerHTML += `
+        <div>
+          ${color} ${item.name} - ${item.qty} (${item.cat})
+        </div>
+      `;
+    });
+  }
+
+  // Auto load for supervisors
+  if (users[current]?.role === "supervisor") {
+    window.onload = () => renderSupervisorPanel();
+  }
+</script>
+  <script>
+  // Auto-refresh every 10 seconds for metrics
+  function updateMetrics() {
+    const current = localStorage.getItem("currentUser");
+    if (users[current]?.role === "technician") {
+      displayTechOrders();
+    } else if (users[current]?.role === "supervisor") {
+      renderSupervisorPanel();
     }
-    
-    // Add inventory item
-    let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
-    
-    function addInventoryItem() {
-      const name = document.getElementById('itemName').value;
-      const category = document.getElementById('itemCategory').value;
-      const quantity = parseInt(document.getElementById('itemQuantity').value);
-      const threshold = parseInt(document.getElementById('itemThreshold').value);
-      
-      if (!name || isNaN(quantity) || isNaN(threshold)) {
-        alert("Invalid inventory data.");
-        return;
+  }
+  setInterval(updateMetrics, 10000);
+
+  // Fake export functions
+  function exportToExcel() {
+    alert("Export to Excel simulated (logic can be extended with SheetJS).");
+  }
+
+  function exportToPDF() {
+    alert("Export to PDF simulated (logic can be extended with jsPDF).");
+  }
+
+  // Alert simulation
+  function checkAlerts() {
+    const now = new Date();
+    orders.forEach(order => {
+      const last = new Date(order.updated);
+      const diffHours = Math.abs(now - last) / 36e5;
+      if (diffHours > 24 && order.status !== "completed") {
+        console.log("Alert: Technician inactive on order " + order.id);
+        alert("Technician inactive on order " + order.id + " for over 24 hours.");
       }
-      
-      inventory.push({ 
-        name, 
-        category, 
-        quantity, 
-        threshold 
-      });
-      
-      localStorage.setItem("inventory", JSON.stringify(inventory));
-      alert("Inventory item added successfully!");
-      document.getElementById('itemName').value = '';
-      document.getElementById('itemQuantity').value = '';
-      document.getElementById('itemThreshold').value = '';
-      showInventoryForm(); // Refresh the form
+    });
+  }
+
+  // Call alerts manually or periodically
+  setInterval(checkAlerts, 60000); // Every minute
+
+  // Logout
+  function logout() {
+    localStorage.removeItem("currentUser");
+    location.reload();
+  }
+
+  // Session check on page load
+  window.addEventListener("load", () => {
+    const current = localStorage.getItem("currentUser");
+    if (current && users[current]) {
+      document.getElementById("loginBox").classList.add("hidden");
+      showDashboard(users[current].role);
     }
-    
-    // Set goal
-    let validatorGoals = JSON.parse(localStorage.getItem("validatorGoals") || "[]");
-    
-    function setGoal() {
-      const type = document.getElementById('goalType').value;
-      const value = parseInt(document.getElementById('goalValue').value);
-      const start = document.getElementById('goalStart').value;
-      const end = document.getElementById('goalEnd').value;
-      
-      if (!type || isNaN(value) || !start || !end) {
-        alert("Invalid goal data.");
-        return;
-      }
-      
-      validatorGoals.push({ 
-        type, 
-        value, 
-        start, 
-        end 
-      });
-      
-      localStorage.setItem("validatorGoals", JSON.stringify(validatorGoals));
-      alert("Goal set successfully!");
-      document.getElementById('goalValue').value = '';
-      document.getElementById('goalStart').value = '';
-      document.getElementById('goalEnd').value = '';
-      showGoalForm(); // Refresh the form
-    }
-  </script>
+  });
+</script>
 </body>
 </html>
